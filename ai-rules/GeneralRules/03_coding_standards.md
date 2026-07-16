@@ -1,8 +1,8 @@
 ---
 trigger: on_coding
 priority: high
-version: 1.2
-last_updated: 2026-07-16T12:00
+version: 1.3
+last_updated: 2026-07-16T15:00
 ---
 
 # 03 代码编写规范
@@ -102,6 +102,7 @@ last_updated: 2026-07-16T12:00
 [ ] Linter 零警告通过
 [ ] 相关测试全部通过
 [ ] 新增测试覆盖正常和边界场景
+[ ] 文件名包含语义化版本号（生产代码强制，见 `02` §2.2）
 [ ] 文件路径/命名符合规范
 [ ] 无硬编码敏感信息
 [ ] .ai_audit.log 审计日志已追加
