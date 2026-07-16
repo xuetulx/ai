@@ -1,0 +1,15 @@
+# 旧目录（已迁移至 ai-rules/GeneralRules/）
+ai_rules/
+
+# IDE
+.codebuddy/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# System
+.DS_Store
+Thumbs.db
+desktop.ini

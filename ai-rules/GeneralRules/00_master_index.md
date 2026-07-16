@@ -1,8 +1,8 @@
 ---
 trigger: always_on
 priority: high
-version: 1.2
-last_updated: 2026-07-15
+version: 1.3
+last_updated: 2026-07-16T12:00
 ---
 
 # AI 规则总索引 v1.2
@@ -180,8 +180,8 @@ monorepo/
 
 ---
 
-**生效时间**：2026-07-15
-**版本**：v1.1（新增 Cursor .mdc 格式对照、Monorepo 场景、Token 预算管理、验证闭环术语）
+**生效时间**：2026-07-16
+**版本**：v1.3（v1.2 → v1.3：强化版本号强制规则，文件名+文件头+修改流程三级联动）
 **子文件总数**：7 个
 **参考标准**：
 - OWASP GenAI Security Project — genai.owasp.org
