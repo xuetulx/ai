@@ -249,6 +249,33 @@
 
 ---
 
+## v1.6 (2026-07-16)
+
+### 改进优化 — 备份前置强制化
+
+基于 AI 在执行修改操作时跳过备份步骤的疏漏，将备份流程从 `[DO]`（流程建议）升级为 `[BLOCK]`（硬约束）：
+
+1. **修改约束新增备份前置硬边界**（`02_file_operations.md` §3.3）
+   - 新增第 0 条 `[BLOCK]`：禁止在未创建 `.bak` 备份文件的情况下对任何现有文件执行 `replace_in_file` 或 `write_to_file`（覆盖模式）
+   - 强制四步流程：(a) 创建备份 (b) 验证备份完整性 (c) 方可执行修改 (d) 事后告知用户
+   - 备份命名规范：`原文件名_v{版本号}.bak` 或 `原文件名_backup_{YYYYMMDD}.bak`
+
+2. **核心行为同步**（`01_core_behavior.md` §2.1）
+   - 新增第 11 条 `[BLOCK]`：禁止未创建 `.bak` 备份副本就执行文件修改（交叉引用 `02_file_operations.md` §3.3 第 0 条）
+
+### 影响文件
+
+- `02_file_operations.md` — v1.4 → v1.5（§3.3 新增备份前置硬边界）
+- `01_core_behavior.md` — v1.4 → v1.5（§2.1 新增第 11 条 BLOCK）
+
+### 同步待办
+
+- [ ] 同步至 Trae IDE 全局规则 `C:\Users\Administrator\.trae-cn\user_rules\`
+- [ ] 同步至 CodeBuddy 全局规则
+- [ ] 推送至 GitHub `ai-rules/GeneralRules`
+
+---
+
 ## 格式说明
 
 ### 版本号规则
