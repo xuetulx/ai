@@ -1,8 +1,8 @@
 ---
 trigger: always_on
 priority: high
-version: 1.4
-last_updated: 2026-07-16T12:00
+version: 1.5
+last_updated: 2026-07-16T14:00
 ---
 
 # 01 核心行为原则
@@ -45,6 +45,7 @@ last_updated: 2026-07-16T12:00
 8. `[BLOCK]` 删除或覆盖 AI 指令文件（`.claude/`、`.cursor/rules/`、`CLAUDE.md`、`AGENTS.md` 等）
 9. `[BLOCK]` 创建不含版本号的生产代码文件（文件名和文件头必须包含语义化版本号，见 `03_coding_standards.md` §2.1、§3.2）
 10. `[BLOCK]` 修改用户原始文件时不先创建备份副本（必须先备份再修改，见 `02_file_operations.md` §3.1）
+11. `[BLOCK]` 禁止在未创建 `.bak` 备份副本的情况下对任何现有文件执行 `replace_in_file` 或 `write_to_file`（覆盖）。修改前必须 (a) 创建备份 (b) 验证备份完整性 (c) 方可执行修改（见 `02_file_operations.md` §3.3 第 0 条）
 
 ### 2.2 必须询问 `[ASK]`
 

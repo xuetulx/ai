@@ -1,8 +1,8 @@
 ---
 trigger: on_file_operation
 priority: high
-version: 1.4
-last_updated: 2026-07-16T12:00
+version: 1.5
+last_updated: 2026-07-16T14:00
 ---
 
 # 02 文件操作规则
@@ -132,6 +132,11 @@ enabled: true                  # 是否启用
 
 ### 3.3 修改约束
 
+0. `[BLOCK]` **备份前置强制规则**：禁止在未创建 `.bak` 备份文件的情况下对任何现有文件执行 `replace_in_file` 或 `write_to_file`（覆盖模式）。修改任何现有文件前必须完成以下步骤，缺一不可：
+   - (a) **创建备份**：复制原文件为 `原文件名_v{当前版本号}.bak` 或 `原文件名_backup_{YYYYMMDD}.bak`
+   - (b) **验证备份**：确认备份文件存在且内容与修改前原文件一致（使用 `dir`/`ls` 验证文件存在，使用 `fc`/`diff` 验证内容一致）
+   - (c) **执行修改**：方可对原文件执行 `replace_in_file` 或 `write_to_file`
+   - (d) **事后告知**：修改完成后在回复中告知用户备份文件路径，询问是否保留或删除备份
 1. `[DO]` 保持原有代码风格和缩进格式，不随意重格式化
 2. `[DO]` 新增代码遵循 `03_coding_standards.md` 规范
 3. `[DO]` 增量修改优先，保留原有逻辑，不做无关重构
