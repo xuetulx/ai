@@ -1,0 +1,4 @@
+====================================  
+[2026-07-21] | 操作: 修改规则文件 | 结果: 成功  
+变更摘要: 将最小化修改原则和原始功能保持规则从DO/无标签升级为BLOCK硬边界  
+影响文件: 01_core_behavior.md(v1.6-v1.7), 02_file_operations.md(v1.5-v1.6), 03_coding_standards.md(v1.3-v1.4), 00_master_index.md(v1.4-v1.5), VERSION_LOG.md(追加v1.8) 
