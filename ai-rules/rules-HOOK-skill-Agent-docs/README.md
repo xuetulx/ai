@@ -39,7 +39,8 @@ rules-HOOK-skill-Agent-docs/
 │   ├── agent-verify.md                  代码验证 Agent
 │   └── agent-file-sync.md               文件同步 Agent
 │
-└── 05-docs/              ← 历史归档
+└── 05-docs/              ← 历史归档 + 配置指南
+    ├── CodeBuddy-配置指南.md              CodeBuddy 用户级部署指南
     └── archived/                         原始 8 个规则文件
 ```
 
