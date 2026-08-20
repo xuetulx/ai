@@ -39,10 +39,15 @@ rules-HOOK-skill-Agent-docs/
 │   ├── agent-verify.md                  代码验证 Agent
 │   └── agent-file-sync.md               文件同步 Agent
 │
+├── deploy-codebuddy.ps1    ← 一键部署脚本（幂等，重复运行即增量同步）
+│
 └── 05-docs/              ← 历史归档 + 配置指南
     ├── CodeBuddy-配置指南.md              CodeBuddy 用户级部署指南
     └── archived/                         原始 8 个规则文件
 ```
+
+> **快速部署**：`powershell -ExecutionPolicy Bypass -File .\deploy-codebuddy.ps1`
+> 脚本自动完成目录创建、文件复制、settings.json 生成与 JSON 校验。
 
 ---
 

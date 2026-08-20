@@ -1,4 +1,5 @@
 ---
+name: git-workflow
 description: "Git 工作流 Skill - 版本控制操作时手动触发"
 version: 1.0
 last_updated: 2026-07-28

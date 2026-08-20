@@ -1,4 +1,5 @@
 ---
+name: agent-verify
 description: "验证 Agent - 每次代码修改后独立执行 lint+test"
 version: 1.0
 last_updated: 2026-07-28

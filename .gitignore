@@ -13,3 +13,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# CodeBuddy hooks 运行副产物
+.ai_audit.log
+*.bak

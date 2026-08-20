@@ -94,7 +94,7 @@ mkdir -Force "$base\agents"
     "hooks": {
         "PreToolUse": [
             {
-                "matcher": "\"write_to_file\"|\"replace_in_file\"",
+                "matcher": "write_to_file|replace_in_file",
                 "hooks": [
                     {
                         "type": "command",
@@ -103,18 +103,18 @@ mkdir -Force "$base\agents"
                 ]
             },
             {
-                "matcher": "\"read_file\"",
+                "matcher": "read_file",
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "python -c \"import sys, json; p = json.load(sys.stdin).get('tool_input',{}).get('filePath',''); exit(1 if any(p.endswith(x) for x in ('.pem','.key','.cert','credentials.','token')) else 0)\""
+                        "command": "python -c \"import sys, json; p = json.load(sys.stdin).get('tool_input',{}).get('filePath',''); exit(2 if any(p.endswith(x) for x in ('.pem','.key','.cert','credentials.','token')) else 0)\""
                     }
                 ]
             }
         ],
         "PostToolUse": [
             {
-                "matcher": "\"write_to_file\"|\"replace_in_file\"|\"delete_file\"",
+                "matcher": "write_to_file|replace_in_file|delete_file",
                 "hooks": [
                     {
                         "type": "command",
@@ -456,10 +456,27 @@ Get-ChildItem "$env:USERPROFILE\.codebuddy\rules" -File | Select-Object Name
 
 当源目录（`rules-HOOK-skill-Agent-docs/`）中的文件发生变更时，需同步到 `~/.codebuddy/`：
 
+### 8.1 一键脚本（推荐）
+
+```powershell
+cd D:\3.aidata\ai\ai-rules\rules-HOOK-skill-Agent-docs
+powershell -ExecutionPolicy Bypass -File .\deploy-codebuddy.ps1
+```
+
+脚本幂等可重复执行：自动创建目录、复制 rules/skills/agents、生成 settings.json，并做 JSON 校验。
+
+### 8.2 手动同步
+
 1. **Hook 变更**：修改 `settings.json` 中的对应 Hook 定义
 2. **Rule 变更**：覆盖 `rules/` 下对应文件（遵循 `agent-file-sync` Agent 的 diff 策略）
 3. **Skill 变更**：覆盖 `skills/<name>/SKILL.md`
 4. **Agent 变更**：覆盖 `agents/<name>.md`
+
+### 8.3 注意事项（避免踩坑）
+
+- `settings.json` 的 `matcher` 是正则表达式，**不要加引号**（如 `"write_to_file|replace_in_file"` 直接写，不可写成 `"\"write_to_file\""`）
+- 敏感文件拦截必须用退出码 **2**（阻塞错误），`1` 仅表示非阻塞提示，无法真正拦截
+- Skills/Agents 文件 frontmatter 需含 `name` 字段；源文件已内置，复制后无需修改
 
 ---
 

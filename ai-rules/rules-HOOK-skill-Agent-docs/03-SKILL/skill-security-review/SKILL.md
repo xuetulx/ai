@@ -1,4 +1,5 @@
 ---
+name: security-review
 description: "安全审查 Skill - 安全相关审查时手动触发"
 version: 1.0
 last_updated: 2026-07-28

@@ -1,4 +1,5 @@
 ---
+name: agent-file-sync
 description: "文件同步 Agent - 按 diff 比例选择局部补丁或全量覆写"
 version: 1.0
 last_updated: 2026-07-28

@@ -1,5 +1,15 @@
 # 版本迭代日志
 
+## v1.2 (2026-08-20)
+- **变更类型**: 部署优化
+- **变更摘要**: 新增一键部署脚本；源文件 frontmatter 补齐 `name`；修正 settings.json 示例格式
+- **影响文件**:
+  - 新增: deploy-codebuddy.ps1（幂等一键部署：复制 rules/skills/agents + 生成 settings.json + JSON 校验）
+  - 修改: 03-SKILL/*/SKILL.md、04-AGENT/*.md（frontmatter 补 `name`，复制后即符合 CodeBuddy 格式）
+  - 修改: 05-docs/CodeBuddy-配置指南.md（matcher 改为无引号正则；敏感文件拦截退出码 1→2；第八节推荐一键脚本）
+  - 修改: README.md（导航新增部署脚本入口）
+- **优化收益**: 下次部署从手工 12+ 步缩短为运行 1 条命令；消除部署后手工补 `name` 的步骤；避免 matcher/退出码两个格式坑
+
 ## v1.1 (2026-07-28)
 - **变更类型**: 文档完善
 - **变更摘要**: 新增 CodeBuddy 用户级部署配置指南

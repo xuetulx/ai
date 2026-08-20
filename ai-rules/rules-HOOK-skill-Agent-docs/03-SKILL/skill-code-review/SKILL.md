@@ -1,4 +1,5 @@
 ---
+name: code-review
 description: "代码审查 Skill - 编写/修改代码后触发审查"
 version: 1.0
 last_updated: 2026-07-28
