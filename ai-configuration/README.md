@@ -13,7 +13,7 @@ last_updated: 2026-07-28
 ## 快速导航
 
 ```
-rules-HOOK-skill-Agent-docs/
+ai-configuration/
 │
 ├── 01-HOOK/              ← 程序级硬约束（不可遗漏）
 │   ├── hook-backup-before-edit.md       修改前强制备份

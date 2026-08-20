@@ -475,12 +475,12 @@ Get-ChildItem "$env:USERPROFILE\.codebuddy\rules" -File | Select-Object Name
 
 ## 八、同步策略
 
-当源目录（`rules-HOOK-skill-Agent-docs/`）中的文件发生变更时，需同步到 `~/.codebuddy/`：
+当源目录（`ai-configuration/`）中的文件发生变更时，需同步到 `~/.codebuddy/`：
 
 ### 8.1 一键脚本（推荐）
 
 ```powershell
-cd D:\3.aidata\ai\ai-rules\rules-HOOK-skill-Agent-docs
+cd D:\3.aidata\ai\ai-configuration
 powershell -ExecutionPolicy Bypass -File .\deploy-codebuddy.ps1
 ```
 

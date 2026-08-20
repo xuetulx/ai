@@ -3,7 +3,7 @@
   一键部署 AI Rules 五层架构到 CodeBuddy 用户级目录（幂等，可重复执行）。
 
 .DESCRIPTION
-  将本目录（rules-HOOK-skill-Agent-docs）下的 HOOK/RULE/SKILL/AGENT 内容部署到
+  将本目录（ai-configuration）下的 HOOK/RULE/SKILL/AGENT 内容部署到
   $env:USERPROFILE\.codebuddy\：
   1. 复制 rules/skills/agents 源文件（frontmatter 已内置 name，符合 CodeBuddy 格式）
   2. 从 settings.json.template（单一事实源）生成 settings.json
