@@ -1,0 +1,53 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "write_to_file|replace_in_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import os, sys, json; data = json.load(sys.stdin); fp = data.get('tool_input', {}).get('filePath', ''); bn = os.path.basename(fp).lower(); (os.path.exists(fp) and not fp.endswith('.bak') and not bn.endswith('.log') and bn not in ('version_log.md', 'changelog.md') and __import__('shutil').copy2(fp, fp + '.bak') or None)\""
+          }
+        ]
+      },
+      {
+        "matcher": "read_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import sys, json; p = json.load(sys.stdin).get('tool_input',{}).get('filePath',''); exit(2 if any(p.endswith(x) for x in ('.pem','.key','.cert','credentials.','token')) else 0)\""
+          }
+        ]
+      },
+      {
+        "matcher": "delete_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import sys, json; fp = json.load(sys.stdin).get('tool_input',{}).get('filePath',''); print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'ask', 'permissionDecisionReason': 'Delete backup file? Confirm the new file is verified first.'}})) if fp.endswith('.bak') else None\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "write_to_file|replace_in_file|delete_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import json, sys, os; from datetime import datetime; d = json.load(sys.stdin); op = d.get('tool_name','?'); fp = d.get('tool_input',{}).get('filePath','?'); ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S'); print(f'==== {ts} | 操作: {op} | 路径: {fp} | 结果: OK ====\\n', file=open(os.path.join(os.path.dirname(fp) if os.path.dirname(fp) else '.', '.ai_audit.log'), 'a'))\""
+          }
+        ]
+      },
+      {
+        "matcher": "write_to_file|replace_in_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import sys, json, os; d = json.load(sys.stdin); fp = d.get('tool_input',{}).get('filePath',''); bak = fp + '.bak'; print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PostToolUse', 'systemMessage': 'Backup ' + bak + ' exists. You may delete it after confirming the changes are correct.', 'additionalContext': 'A backup file ' + bak + ' was created before editing. After the user confirms the change is correct, ask whether to delete this .bak backup.'}})) if os.path.exists(bak) else None\""
+          }
+        ]
+      }
+    ]
+  }
+}

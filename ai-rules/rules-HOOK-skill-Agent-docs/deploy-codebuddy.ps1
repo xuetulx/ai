@@ -4,8 +4,10 @@
 
 .DESCRIPTION
   将本目录（rules-HOOK-skill-Agent-docs）下的 HOOK/RULE/SKILL/AGENT 内容部署到
-  $env:USERPROFILE\.codebuddy\，并生成/覆盖 settings.json（Hooks 配置）。
-  源文件 frontmatter 已内置 name 字段，复制后即符合 CodeBuddy 格式，无需手工修改。
+  $env:USERPROFILE\.codebuddy\：
+  1. 复制 rules/skills/agents 源文件（frontmatter 已内置 name，符合 CodeBuddy 格式）
+  2. 从 settings.json.template（单一事实源）生成 settings.json
+  3. 校验：python 依赖、JSON 合法性、hooks 结构、源与部署一致性
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File .\deploy-codebuddy.ps1
@@ -21,6 +23,12 @@ $dst = Join-Path $UserProfile '.codebuddy'
 
 Write-Host "源目录: $src" -ForegroundColor Cyan
 Write-Host "目标目录: $dst" -ForegroundColor Cyan
+
+# 0. 依赖检查：hooks 命令依赖 python
+if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+    throw "未检测到 python 命令（hooks 依赖 python），请先安装并加入 PATH。"
+}
+Write-Host "python 可用: $((Get-Command python).Source)" -ForegroundColor Green
 
 # 1. 创建目录结构
 $dirs = @('rules', 'skills\code-review', 'skills\security-review', 'skills\git-workflow', 'agents')
@@ -49,60 +57,64 @@ foreach ($f in $files) {
 }
 Write-Host "已复制 $($files.Count) 个文件 (rules/skills/agents)" -ForegroundColor Green
 
-# 5. 生成 settings.json（Hooks）——无 BOM UTF-8
-$settingsJson = @'
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "write_to_file|replace_in_file",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python -c \"import os, sys, json; data = json.load(sys.stdin); fp = data.get('tool_input', {}).get('filePath', ''); (os.path.exists(fp) and not fp.endswith('.bak') and __import__('shutil').copy2(fp, fp + '.bak') or None)\""
-          }
-        ]
-      },
-      {
-        "matcher": "read_file",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python -c \"import sys, json; p = json.load(sys.stdin).get('tool_input',{}).get('filePath',''); exit(2 if any(p.endswith(x) for x in ('.pem','.key','.cert','credentials.','token')) else 0)\""
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "write_to_file|replace_in_file|delete_file",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python -c \"import json, sys, os; from datetime import datetime; d = json.load(sys.stdin); op = d.get('tool_name','?'); fp = d.get('tool_input',{}).get('filePath','?'); ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S'); print(f'==== {ts} | 操作: {op} | 路径: {fp} | 结果: OK ====\\n', file=open(os.path.join(os.path.dirname(fp) if os.path.dirname(fp) else '.', '.ai_audit.log'), 'a'))\""
-          }
-        ]
-      }
-    ]
-  }
-}
-'@
+# 5. 从模板生成 settings.json（单一事实源）
+$templatePath = Join-Path $src 'settings.json.template'
+if (-not (Test-Path $templatePath)) { throw "模板不存在: $templatePath" }
 $settingsPath = Join-Path $dst 'settings.json'
-[System.IO.File]::WriteAllText($settingsPath, $settingsJson, (New-Object System.Text.UTF8Encoding($false)))
-Write-Host "已生成 settings.json (Hooks)" -ForegroundColor Green
+Copy-Item $templatePath $settingsPath -Force
+Write-Host "已从模板生成 settings.json (Hooks)" -ForegroundColor Green
 
-# 6. 验证部署结果
-Write-Host "`n===== 部署结果验证 =====" -ForegroundColor Yellow
-Get-ChildItem -Path (Join-Path $dst 'rules'), (Join-Path $dst 'skills'), (Join-Path $dst 'agents') -Recurse -File |
-    ForEach-Object { $_.FullName.Replace("$dst\", '') }
-Get-Item $settingsPath | ForEach-Object { "$($_.Name) ($($_.Length) bytes)" }
+# 6. 校验
+Write-Host "`n===== 部署验证 =====" -ForegroundColor Yellow
 
+# 6.1 JSON 合法性
 try {
-    Get-Content $settingsPath -Raw | ConvertFrom-Json | Out-Null
+    $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
     Write-Host "settings.json JSON 校验: 通过" -ForegroundColor Green
 } catch {
     Write-Host "settings.json JSON 校验: 失败 - $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
+
+# 6.2 hooks 结构（关键 matcher 齐全性）
+$expectedPre = @('write_to_file|replace_in_file', 'read_file', 'delete_file')
+$expectedPost = @('write_to_file|replace_in_file|delete_file', 'write_to_file|replace_in_file')
+$preMatchers = @($settings.hooks.PreToolUse | ForEach-Object { $_.matcher })
+$postMatchers = @($settings.hooks.PostToolUse | ForEach-Object { $_.matcher })
+$preOk = ($preMatchers -join ';') -eq ($expectedPre -join ';')
+$postOk = ($postMatchers -join ';') -eq ($expectedPost -join ';')
+if ($preOk -and $postOk) {
+    Write-Host "hooks 结构校验: 通过 (PreToolUse=$($preMatchers.Count) / PostToolUse=$($postMatchers.Count))" -ForegroundColor Green
+} else {
+    Write-Host "hooks 结构校验: 失败" -ForegroundColor Red
+    Write-Host "  PreToolUse  实际: $($preMatchers -join ' | ')" -ForegroundColor Yellow
+    Write-Host "  PostToolUse 实际: $($postMatchers -join ' | ')" -ForegroundColor Yellow
+    exit 1
+}
+
+# 6.3 源与部署一致性（MD5 对比）
+$mismatch = @()
+foreach ($f in $files) {
+    $from = Join-Path $src $f.from
+    $to   = Join-Path $dst $f.to
+    $h1 = (Get-FileHash $from -Algorithm MD5).Hash
+    $h2 = (Get-FileHash $to -Algorithm MD5).Hash
+    if ($h1 -ne $h2) { $mismatch += $f.to }
+}
+$hT = (Get-FileHash $templatePath -Algorithm MD5).Hash
+$hS = (Get-FileHash $settingsPath -Algorithm MD5).Hash
+if ($hT -ne $hS) { $mismatch += 'settings.json' }
+if ($mismatch.Count -eq 0) {
+    Write-Host "一致性校验: 通过（$($files.Count) 文件 + settings.json 全部与源一致）" -ForegroundColor Green
+} else {
+    Write-Host "一致性校验: 失败 - $($mismatch -join ', ')" -ForegroundColor Red
+    exit 1
+}
+
+# 6.4 部署清单
+Write-Host "`n----- 部署清单 -----" -ForegroundColor Cyan
+Get-ChildItem -Path (Join-Path $dst 'rules'), (Join-Path $dst 'skills'), (Join-Path $dst 'agents') -Recurse -File |
+    ForEach-Object { $_.FullName.Replace("$dst\", '') }
+Get-Item $settingsPath | ForEach-Object { "$($_.Name) ($($_.Length) bytes)" }
 
 Write-Host "`n部署完成。重新加载 CodeBuddy 后生效。" -ForegroundColor Green

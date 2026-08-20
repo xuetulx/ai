@@ -98,7 +98,7 @@ mkdir -Force "$base\agents"
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "python -c \"import os, sys, json; data = json.load(sys.stdin); fp = data.get('tool_input', {}).get('filePath', ''); (os.path.exists(fp) and not fp.endswith('.bak') and __import__('shutil').copy2(fp, fp + '.bak') or None)\""
+                        "command": "python -c \"import os, sys, json; data = json.load(sys.stdin); fp = data.get('tool_input', {}).get('filePath', ''); bn = os.path.basename(fp).lower(); (os.path.exists(fp) and not fp.endswith('.bak') and not bn.endswith('.log') and bn not in ('version_log.md', 'changelog.md') and __import__('shutil').copy2(fp, fp + '.bak') or None)\""
                     }
                 ]
             },
@@ -108,6 +108,15 @@ mkdir -Force "$base\agents"
                     {
                         "type": "command",
                         "command": "python -c \"import sys, json; p = json.load(sys.stdin).get('tool_input',{}).get('filePath',''); exit(2 if any(p.endswith(x) for x in ('.pem','.key','.cert','credentials.','token')) else 0)\""
+                    }
+                ]
+            },
+            {
+                "matcher": "delete_file",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "python -c \"import sys, json; fp = json.load(sys.stdin).get('tool_input',{}).get('filePath',''); print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'ask', 'permissionDecisionReason': 'Delete backup file? Confirm the new file is verified first.'}})) if fp.endswith('.bak') else None\""
                     }
                 ]
             }
@@ -121,6 +130,15 @@ mkdir -Force "$base\agents"
                         "command": "python -c \"import json, sys, os; from datetime import datetime; d = json.load(sys.stdin); op = d.get('tool_name','?'); fp = d.get('tool_input',{}).get('filePath','?'); ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S'); print(f'==== {ts} | 操作: {op} | 路径: {fp} | 结果: OK ====\\n', file=open(os.path.join(os.path.dirname(fp) if os.path.dirname(fp) else '.', '.ai_audit.log'), 'a'))\""
                     }
                 ]
+            },
+            {
+                "matcher": "write_to_file|replace_in_file",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "python -c \"import sys, json, os; d = json.load(sys.stdin); fp = d.get('tool_input',{}).get('filePath',''); bak = fp + '.bak'; print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PostToolUse', 'systemMessage': 'Backup ' + bak + ' exists. You may delete it after confirming the changes are correct.', 'additionalContext': 'A backup file ' + bak + ' was created before editing. After the user confirms the change is correct, ask whether to delete this .bak backup.'}})) if os.path.exists(bak) else None\""
+                    }
+                ]
             }
         ]
     }
@@ -131,9 +149,11 @@ mkdir -Force "$base\agents"
 
 | Hook | 类型 | 功能 |
 |------|------|------|
-| backup-before-edit | PreToolUse | 修改/覆写已存在文件前自动创建 `.bak` 备份 |
+| backup-before-edit | PreToolUse | 修改/覆写已存在文件前自动创建 `.bak` 备份（追加式文件 `*.log`、`VERSION_LOG.md`、`CHANGELOG.md` 除外） |
 | block-sensitive-files | PreToolUse | 拦截读取 `*.pem`、`*.key`、`*.cert`、`credentials.*`、`token*` |
+| confirm-backup-delete | PreToolUse | 删除 `.bak` 文件前弹权限确认框（`permissionDecision: ask`），确认新文件无误后才放行 |
 | auto-audit-log | PostToolUse | 每次文件修改后追加审计日志到 `.ai_audit.log` |
+| backup-cleanup-prompt | PostToolUse | 修改完成后若存在 `.bak` 备份，提示用户确认后清理 |
 
 ### 步骤 3：部署 Rules
 
@@ -150,6 +170,7 @@ mkdir -Force "$base\agents"
 5. 禁止硬编码密钥/密码/Token（用环境变量）
 6. 禁止创建不含语义化版本号的生产代码文件
 7. 禁止对任何现有文件执行 replace_in_file / write_to_file(覆盖) 而不先创建备份
+   例外：追加式文件（*.log、VERSION_LOG.md、CHANGELOG.md）只追加不覆盖，无需备份
 
 ## Ask First [ASK]
 1. 修改/删除受保护文件
@@ -437,7 +458,7 @@ Get-ChildItem "$env:USERPROFILE\.codebuddy\rules" -File | Select-Object Name
 
 | 源文件（仓库维护） | 目标文件（用户级部署） |
 |---|---|
-| `01-HOOK/hook-backup-before-edit.md` | `settings.json` → PreToolUse |
+| `01-HOOK/hook-backup-before-edit.md` | `settings.json` → PreToolUse（备份 + 删除确认 + 清理提示 3 个 hook） |
 | `01-HOOK/hook-block-sensitive-files.md` | `settings.json` → PreToolUse |
 | `01-HOOK/hook-auto-audit-log.md` | `settings.json` → PostToolUse |
 | `02-RULE/Always/00-hard-boundaries.mdc` | `rules/00-hard-boundaries.md` |
@@ -463,7 +484,16 @@ cd D:\3.aidata\ai\ai-rules\rules-HOOK-skill-Agent-docs
 powershell -ExecutionPolicy Bypass -File .\deploy-codebuddy.ps1
 ```
 
-脚本幂等可重复执行：自动创建目录、复制 rules/skills/agents、生成 settings.json，并做 JSON 校验。
+脚本幂等可重复执行，完整流程：
+
+1. 依赖检查（python 可用性）
+2. 创建目录、复制 rules/skills/agents 共 9 个文件
+3. 从 `settings.json.template`（单一事实源）生成 settings.json
+4. 三重校验：JSON 合法性 → hooks 结构（matcher 齐全性）→ 源与部署 MD5 一致性
+5. 输出部署清单
+
+> **settings.json 配置变更流程**：修改 `settings.json.template`（仓库根目录）→ 运行脚本即同步生效。
+> 模板是 hooks 配置的**单一事实源**，脚本与指南均不再内嵌 JSON 配置。
 
 ### 8.2 手动同步
 
@@ -477,6 +507,8 @@ powershell -ExecutionPolicy Bypass -File .\deploy-codebuddy.ps1
 - `settings.json` 的 `matcher` 是正则表达式，**不要加引号**（如 `"write_to_file|replace_in_file"` 直接写，不可写成 `"\"write_to_file\""`）
 - 敏感文件拦截必须用退出码 **2**（阻塞错误），`1` 仅表示非阻塞提示，无法真正拦截
 - Skills/Agents 文件 frontmatter 需含 `name` 字段；源文件已内置，复制后无需修改
+- 追加式文件（`*.log`、`VERSION_LOG.md`、`CHANGELOG.md`）只追加不覆盖，backup hook 会自动跳过备份
+- 备份清理流程：修改完成后 `backup-cleanup-prompt` 会提示存在 `.bak`；删除 `.bak` 时 `confirm-backup-delete` 强制弹确认框（`permissionDecision: ask`），确认新文件无误后才允许删除
 
 ---
 

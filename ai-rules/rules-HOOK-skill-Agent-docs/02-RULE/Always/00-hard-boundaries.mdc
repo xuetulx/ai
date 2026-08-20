@@ -3,8 +3,8 @@ description: "全局硬边界 - 每次会话必加载（≤30行）"
 globs: ""
 alwaysApply: true
 enabled: true
-version: 1.0
-last_updated: 2026-07-28
+version: 1.1
+last_updated: 2026-08-20
 ---
 
 # 全局硬边界
@@ -18,6 +18,7 @@ last_updated: 2026-07-28
 5. 禁止硬编码密钥/密码/Token（用环境变量）
 6. 禁止创建不含语义化版本号的生产代码文件
 7. 禁止对任何现有文件执行 replace_in_file / write_to_file(覆盖) 而不先创建备份
+   例外：追加式文件（*.log、VERSION_LOG.md、CHANGELOG.md）只追加不覆盖，无需备份
 
 ## Ask First [ASK]
 

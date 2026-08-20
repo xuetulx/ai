@@ -1,5 +1,33 @@
 # 版本迭代日志
 
+## v1.5 (2026-08-20)
+- **变更类型**: 流程优化
+- **变更摘要**: 部署流程升级为"单一事实源 + 三重校验"
+- **影响文件**:
+  - 新增: settings.json.template（hooks 配置单一事实源，消除脚本/指南/部署结果三处重复维护）
+  - 修改: deploy-codebuddy.ps1（改为从模板生成 settings.json；新增 python 依赖检查、hooks 结构校验、源与部署 MD5 一致性校验）
+  - 修改: 05-docs/CodeBuddy-配置指南.md（8.1 一键脚本说明更新为四步流程）
+- **优化收益**: 配置改动只维护一份模板；脚本自动拦截"部署结果漂移"（JSON 非法 / hook 缺失 / 文件不一致），杜绝静默失效
+
+## v1.4 (2026-08-20)
+- **变更类型**: 功能增强
+- **变更摘要**: 备份文件新增确认删除机制（修改完成提示清理 + 删除时强制确认）
+- **影响文件**:
+  - 修改: 01-HOOK/hook-backup-before-edit.md（新增"备份清理确认流程"章节，version 1.2）
+  - 修改: 05-docs/CodeBuddy-配置指南.md（settings.json 示例新增 2 个 hook；Hook 功能表/映射表/8.3 同步）
+  - 修改: deploy-codebuddy.ps1（settings.json 新增 confirm-backup-delete + backup-cleanup-prompt）
+- **优化收益**: 修改完成后提示清理备份；删除 `.bak` 前强制用户确认，形成"备份→修改→确认→清理"完整闭环，避免备份堆积
+
+## v1.3 (2026-08-20)
+- **变更类型**: 规则优化
+- **变更摘要**: 追加式文件（日志/变更记录）免除 .bak 备份
+- **影响文件**:
+  - 修改: 01-HOOK/hook-backup-before-edit.md（例外放行新增"追加式文件"类别，version 1.1）
+  - 修改: 02-RULE/Always/00-hard-boundaries.mdc（硬边界第 7 条补充例外，version 1.1）
+  - 修改: 05-docs/CodeBuddy-配置指南.md（settings.json 示例 / 功能表 / 硬边界副本 / 8.3 注意事项同步）
+  - 修改: deploy-codebuddy.ps1（backup hook 命令排除 `*.log`、`VERSION_LOG.md`、`CHANGELOG.md`）
+- **优化收益**: 日志/变更记录类文件只追加不覆盖，原内容始终保留；不再产生无意义的 `*.bak` 噪音文件
+
 ## v1.2 (2026-08-20)
 - **变更类型**: 部署优化
 - **变更摘要**: 新增一键部署脚本；源文件 frontmatter 补齐 `name`；修正 settings.json 示例格式
