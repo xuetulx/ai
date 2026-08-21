@@ -1,0 +1,5 @@
+# dsh-plugin-guard bundle patch: mounts the guard plugin row.
+# The row id must match the plugin's `export const name` in lib/index.js.
+- insert:
+    - id: plugin-guard
+      name: 'dsh-plugin-guard'

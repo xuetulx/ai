@@ -16,6 +16,8 @@ DeepSeek Harness 开源后采用「一切皆插件」设计哲学，官方本体
 |------|------|
 | `install-dsh-plugins.sh` | 主脚本（Bash，适用于 Git Bash / WSL / Linux / macOS） |
 | `install-dsh-plugins.bat` | Windows 双击启动器（自动查找 Git Bash 并调用主脚本） |
+| `guard.bat` | 插件监控工具启动器（扫描 / 冲突检测 / 一键启停） |
+| `dsh-plugin-guard/` | DSH 插件冲突监控器（详见其 README） |
 
 ## 前置要求
 
@@ -115,6 +117,22 @@ install-dsh-plugins.bat --full --yes
 | dsh-anchored-standard | 属于 preset，非标准插件 | 参考仓库说明手动复制 preset 文件 |
 | deepseek-harness-desktop | 桌面版安装包 | 去 [Releases](https://github.com/anywhere-labs/deepseek-harness-desktop/releases) 下载 |
 | dsh-poison-guard | 供应链安全扫描工具 | `npm install -g dsh-poison-guard` |
+
+## 插件监控工具（dsh-plugin-guard）
+
+本目录附带 **DSH 插件冲突监控器**，用于排查插件间冲突与启动失败问题：
+
+```bat
+guard.bat status              :: 查看插件状态概览
+guard.bat scan                :: 扫描所有插件
+guard.bat check               :: 检测冲突与启动风险
+guard.bat disable <id>        :: 一键禁用插件
+guard.bat enable  <id>        :: 一键启用插件
+```
+
+- 可识别重复挂载、double-mount、已知风险插件（如缺 `vaultPath` 的 Obsidian Memory、依赖外部 IM 的 AWiki）
+- 启停操作自动备份 `cordis.patch.yml`，重启 DSH 后生效
+- 详见 `dsh-plugin-guard/README.md`
 
 ## 安装顺序建议
 

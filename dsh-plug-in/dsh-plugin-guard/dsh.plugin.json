@@ -1,0 +1,11 @@
+{
+  "name": "dsh-plugin-guard",
+  "description": "DSH 插件冲突监控器：检测插件间冲突与启动风险，一键启停插件",
+  "version": "1.0.0",
+  "entry": {
+    "name": "dsh-plugin-guard"
+  },
+  "client": {
+    "platform": "web"
+  }
+}
