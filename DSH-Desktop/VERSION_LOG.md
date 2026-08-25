@@ -3,6 +3,47 @@
 > DSH Desktop 版本变更日志
 > 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.9] - 2026-08-25
+
+### Changed
+- **回退恢复 `--no-open` 启动参数**（用户实测：移除该参数后 dsh 自动打开浏览器，与"打开DSH"按钮重复 → 出现两个浏览器窗口）
+  - 恢复 `DSH_EXTRA_ARGS = ["--no-open"]` 常量与 `build_start_command()` 中的展开
+  - 行为回到 v1.0.5：启动服务不自动打开浏览器，仅通过应用内"打开DSH"按钮访问，杜绝双窗口
+- README 功能表同步恢复 `--no-open`，保持文档与代码一致
+
+### Technical
+- 修改前已备份 `main.py.bak`（23883B）
+- 验证：read_lints 0 错误、py_compile OK
+- `APP_VERSION` 升至 1.0.9（历史版本 1.0.8 记录保留）
+- 重新打包 `dist/DSH-Desktop.exe`
+
+## [1.0.8] - 2026-08-25
+
+### Changed
+- **移除 `--no-open` 启动参数**（B_00 前置检索复核结论：官方 CLI 文档 v0.1.0-rc.7 无此参数）
+  - `DSH_EXTRA_ARGS` 常量删除，`build_start_command()` 恢复为官方标准命令 `npx -y @deepseek-ai/dsh web`
+  - 启动后 dsh 会自动打开浏览器（与应用内"打开DSH"按钮行为一致，无需担心功能缺失）
+- 同步更新模块 docstring 中的命令说明
+
+### Technical
+- 修改前已备份 `main.py.bak`（23964B）
+- 验证：read_lints 0 错误、py_compile OK
+- `APP_VERSION` 同步升至 1.0.8
+- 已用 PyInstaller 6.22.2 重新打包 `dist/DSH-Desktop.exe`（--onefile --windowed --clean）
+
+## [1.0.7] - 2026-08-25
+
+### Fixed
+- README.md 与实际状态严重脱节，一次性对齐到 v1.0.5：
+  - 版本号 `v1.0.0` → `v1.0.5`
+  - 移除启动命令中的 `--no-open`（官方 CLI 文档 v0.1.0-rc.7 无此参数，按 B_00 前置检索复核结论修正）
+  - 删除"方式一：双击 build.bat"打包指引（build.bat 已随清理删除）
+  - 移除 `pyinstaller DSH-Desktop.spec` 指引（spec 已删除），仅保留命令行打包方式
+  - 补充 v1.0.4 新增的外部实例识别与强制关闭说明
+
+### Technical
+- 修改前已备份 `README.md.bak`（2276B）
+
 ## [1.0.6] - 2026-08-25
 
 ### Added
