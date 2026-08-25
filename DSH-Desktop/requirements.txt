@@ -1,0 +1,30 @@
+# DSH Desktop 依赖说明
+
+DSH Desktop 仅依赖 Python 3.8+ 标准库，无第三方依赖。
+
+## 环境要求
+
+- Python >= 3.8（自带 `tkinter`）
+- Node.js + npx（DSH 服务运行所需）
+
+## 标准库模块
+
+- `tkinter`         GUI
+- `subprocess`      启动/关闭 npx 子进程
+- `threading`       异步读取子进程输出
+- `webbrowser`      打开系统默认浏览器
+- `shutil`          查找 npx 可执行路径
+- `os` / `sys` / `time`
+
+## 运行
+
+```bash
+python main.py
+```
+
+如需打包为单文件 EXE：
+
+```bash
+pip install pyinstaller
+pyinstaller --noconfirm --onefile --windowed --name "DSH-Desktop" main.py
+```
