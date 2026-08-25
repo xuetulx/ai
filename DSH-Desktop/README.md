@@ -37,20 +37,6 @@ python main.py
 
 ## 打包为 EXE（可直接双击运行）
 
-### 方式一：双击一键打包（推荐）
-
-**双击 `build.bat`**，脚本会自动：
-1. 检查/安装 PyInstaller
-2. 打包为单文件 `dist/DSH-Desktop.exe`（无控制台窗口）
-
-### 方式二：命令行
-
-```bash
-pip install pyinstaller
-pyinstaller DSH-Desktop.spec
-# 或
-pyinstaller --noconfirm --onefile --windowed --name "DSH-Desktop" main.py
-```
 
 打包后产物位于 `dist/DSH-Desktop.exe`，**双击即可运行，无需 Python 环境**。可发送给他人直接使用。
 
