@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "CNB MCP Server": {
+      "autoApprove": [],
+      "timeout": 60000,
+      "command": "npx",
+      "args": [
+        "-y",
+        "-p",
+        "@cnbcool/mcp-server",
+        "cnb-mcp-stdio"
+      ],
+      "type": "stdio",
+      "disabled": false
+    },
+    "GitHub": {
+      "autoApprove": [],
+      "timeout": 60000,
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "NODE_OPTIONS": "--use-system-ca"
+      },
+      "type": "stdio",
+      "disabled": false
+    }
+  }
+}

@@ -1,5 +1,14 @@
 # 版本迭代日志
 
+## v1.6 (2026-08-25)
+- **变更类型**: 配置修复
+- **变更摘要**: 用户级 MCP 配置占位符替换为环境变量引用；新增项目级 `.mcp.json`
+- **影响文件**:
+  - 修改: `~/.codebuddy/mcp.json`（`<API_TOKEN_HERE>`/`<YOUR_TOKEN>` 占位符 → `${CNB_API_TOKEN}`/`${GITHUB_PERSONAL_ACCESS_TOKEN}`；原文件备份为 `mcp.json.bak`）
+  - 新增: `.mcp.json`（项目级，IDE 已监听该路径，环境变量引用可安全入库）
+- **配套动作**: 需设置环境变量 `CNB_API_TOKEN`、`GITHUB_PERSONAL_ACCESS_TOKEN` 后重启 CodeBuddy 生效
+- **诊断依据**: IDE 日志实证 hooks/rules 一直正常执行；失效根因是 MCP token 占位符未替换（`configSource: user`）+ 废弃命名 `mcp.json`（官方推荐 `~/.codebuddy/.mcp.json`）
+
 ## v1.5 (2026-08-20)
 - **变更类型**: 流程优化
 - **变更摘要**: 部署流程升级为"单一事实源 + 三重校验"
@@ -58,3 +67,12 @@
   - Rule/Agent-Requested: 代码规范类改为 glob 精准匹配
   - Skill: 安全审查、代码审查、Git 工作流改为手动触发
   - Agent: 验证、文件同步改为隔离执行
+
+## v1.7 (2026-08-25)
+- **变更类型**: 功能补充
+- **变更摘要**: 补齐 06-MCP 文件操作 MCP 服务器配置；新增 DSH 工作区整理文档
+- **影响文件**:
+  - 新增: `06-MCP/README.md`（文件操作 MCP 说明，Claude/CodeBuddy + DSH 双格式）
+  - 新增: `06-MCP/mcp.filesystem.json`（官方 filesystem server 配置片段）
+  - 新增: `D:\3.aidata\dsh\docs\ai-file-operations-config.md`（Agent/Rules/MCP/Skill/插件五类总览）
+- **配套动作**: 可选 —— 将 filesystem MCP 写入项目 `.mcp.json` 或 DSH `cordis.patch.yml` 启用

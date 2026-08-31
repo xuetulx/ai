@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "autoApprove": [],
+      "timeout": 60000,
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "D:/3.aidata"
+      ],
+      "type": "stdio",
+      "disabled": false
+    }
+  }
+}
