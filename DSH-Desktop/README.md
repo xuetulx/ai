@@ -1,6 +1,6 @@
 # DSH Desktop
 
-> DeepSeek Harness 桌面控制器 v1.1.0
+> DeepSeek Harness 桌面控制器 v1.3.2
 
 一个轻量级 Windows 桌面应用，用于控制 [DeepSeek Harness (DSH)](https://www.npmjs.com/package/@deepseek-ai/dsh) 本地服务的启停与访问。
 
@@ -8,10 +8,28 @@
 
 | 按钮       | 作用                                                                     |
 | ---------- | ------------------------------------------------------------------------ |
-| 开启服务   | 后台执行 `npx -y @deepseek-ai/dsh web --no-open`，启动 Web UI（端口 3080）          |
+| 开启服务   | 先弹"便携插件管理"窗勾选要注册的本地插件，再后台执行 `dsh web --no-open` 启动 Web UI（端口 3080） |
 | 关闭服务   | 终止本应用启动的进程树；若端口被外部实例占用，可强制结束占用进程         |
 | 打开DSH    | 在系统默认浏览器中打开 `http://127.0.0.1:3080`                          |
 | 版本感知   | 启动时后台查询 npm 上 `@deepseek-ai/dsh` 的 latest 版本，显示在状态卡片   |
+
+## 便携插件机制（v1.3.0）
+
+`DSH-Desktop/dsh-Plugin/` 下归置便携插件源（本地 checkout 或已构建产物），随 `DSH-Desktop` 文件夹一起便携迁移。换新环境时无需手动 `dsh plugin add`：
+
+- 点"开启服务"时弹出**便携插件管理**窗，扫描 `dsh-Plugin/` 下所有含 `package.json` 的子目录，显示名称 / 版本 / 已安装状态
+- 默认勾选 `dsh-plugin-guard` 与 `dsh-market`（已安装项也默认勾选，重复注册幂等）
+- 确认后随服务启动自动 `dsh plugin --profile web add link:<路径>` 注册到 web profile
+- 跳过 / 取消 = 不注册直接启动；注册失败不阻断启动（仅日志告警）
+
+当前 `dsh-Plugin/` 下内置：
+
+| 目录              | 包名             | 版本   | 说明                                   |
+| ----------------- | ---------------- | ------ | -------------------------------------- |
+| dsh-plugin-guard  | dsh-plugin-guard | 1.3.0  | 插件冲突 / 启动风险监控器，一键禁用启用 |
+| dsh-market        | dshmarket        | 1.15.0 | 可视化插件市场，浏览 / 搜索 / 一键安装  |
+
+> 要新增便携插件：把插件源（含 `package.json`，声明 `dsh.bundle.patch`）放入 `dsh-Plugin/`，启动器会自动识别。如需默认勾选，把目录名加入 `main.py` 的 `DEFAULT_LOCAL_PLUGINS`。
 
 ## 与官方 CLI 对齐（deepseek-ai/deepseek-harness）
 

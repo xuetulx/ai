@@ -17,3 +17,10 @@ desktop.ini
 # CodeBuddy hooks 运行副产物
 .ai_audit.log
 *.bak
+
+# DSH-Desktop runtime / plugin deps (not versioned)
+dsh-usage-boot.log
+DSH-Desktop/dsh-Plugin/**/node_modules/
+DSH-Desktop/DSH-Desktop.exe
+DSH-Desktop/.snap.json
+DSH-Desktop/dist/data/
