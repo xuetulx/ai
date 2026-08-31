@@ -17,18 +17,30 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { execSync } = require('child_process');
 
 /* ------------------------------------------------------------------ *
- * 路径解析
+ * 路径解析（对齐上游 deepseek-harness 语义）
+ *   - DSH_HOME（或 ~/.dsh）是 Harness home；
+ *   - profiles 位于 <home>/profiles/<name>；
+ *   - home 级用户 patch 层位于 <home>/cordis.patch.yml，
+ *     应用在"每个 profile 自身层"之上。
  * ------------------------------------------------------------------ */
 
 /**
- * 计算 DSH profiles 根目录。
+ * 计算 DSH Harness home 目录。
  * 优先环境变量 DSH_HOME，其次 ~/.dsh。
  */
-function profilesRoot() {
+function dshHome() {
   if (process.env.DSH_HOME) return path.resolve(process.env.DSH_HOME);
-  return path.join(os.homedir(), '.dsh', 'profiles');
+  return path.join(os.homedir(), '.dsh');
+}
+
+/**
+ * 计算 DSH profiles 根目录（<home>/profiles）。
+ */
+function profilesRoot() {
+  return path.join(dshHome(), 'profiles');
 }
 
 /**
@@ -36,6 +48,86 @@ function profilesRoot() {
  */
 function profileDir(profile = 'web') {
   return path.join(profilesRoot(), profile);
+}
+
+/**
+ * home 级用户 patch 文件（$DSH_HOME/cordis.patch.yml）。
+ * 上游在 bundle 层 + profile 自身层之后、CLI --patch 覆盖层之前应用。
+ */
+function homePatchFile() {
+  return path.join(dshHome(), 'cordis.patch.yml');
+}
+
+/* ------------------------------------------------------------------ *
+ * bundle 解析（对齐上游 resolveBundleDir 双锚点）
+ *   锚点 1：profile 目录（第三方 bundle / link 安装的插件）；
+ *   锚点 2：dsh 安装（内置 bundle，如 @deepseek-ai/dsh-base）。
+ * patch 文件名不硬编码，读取 bundle manifest 的 dsh.bundle.patch 字段。
+ * ------------------------------------------------------------------ */
+
+/**
+ * 收集候选"node_modules 根"列表：
+ *   profile 自身、profiles 根、~/.dsh、DSH_HOME、npm 全局根。
+ */
+function candidateNodeModulesRoots(profileDirPath) {
+  const roots = new Set();
+  roots.add(path.join(profileDirPath, 'node_modules'));
+  roots.add(path.join(path.dirname(profileDirPath), 'node_modules'));
+  roots.add(path.join(dshHome(), 'node_modules'));
+  if (process.env.DSH_HOME) roots.add(path.join(process.env.DSH_HOME, 'node_modules'));
+  try {
+    const g = execSync('npm root -g', { encoding: 'utf8', windowsHide: true }).trim();
+    if (g) roots.add(g);
+  } catch {
+    // 无 npm 时静默降级
+  }
+  return [...roots];
+}
+
+/**
+ * 查找内置 bundle 的包目录（从候选根 + dsh 安装嵌套两层解析）。
+ */
+function findBuiltinBundle(profileDirPath, pkgName) {
+  for (const root of candidateNodeModulesRoots(profileDirPath)) {
+    // 直接 node_modules/<pkg>
+    const direct = path.join(root, pkgName);
+    if (fs.existsSync(path.join(direct, 'package.json'))) return direct;
+    // 嵌套于 @deepseek-ai/dsh 内（全局安装形态）
+    const nested = path.join(root, '@deepseek-ai', 'dsh', 'node_modules', pkgName);
+    if (fs.existsSync(path.join(nested, 'package.json'))) return nested;
+    // 扁平 node_modules/<pkg>（pnpm 全局依赖提升形态）
+    const hoisted = path.join(root, pkgName.replace(/^@[^/]+\//, ''));
+    if (fs.existsSync(path.join(hoisted, 'package.json'))) return hoisted;
+  }
+  return null;
+}
+
+/**
+ * 双锚点解析 bundle 目录：profile node_modules -> dsh 安装。
+ */
+function findBundleDir(profileDirPath, pkgName) {
+  const local = path.join(profileDirPath, 'node_modules', pkgName);
+  if (fs.existsSync(path.join(local, 'package.json'))) return local;
+  return findBuiltinBundle(profileDirPath, pkgName);
+}
+
+/**
+ * 计算 bundle 的 patch 文件路径。
+ * 优先 bundle package.json 的 dsh.bundle.patch 声明，回退 cordis.patch.yml。
+ */
+function bundlePatchFile(bundleDir) {
+  const manifest = readJson(path.join(bundleDir, 'package.json'));
+  const declared = manifest && manifest.dsh && manifest.dsh.bundle && manifest.dsh.bundle.patch;
+  const name = declared && typeof declared === 'string' ? declared.replace(/^\.\//, '') : 'cordis.patch.yml';
+  return path.join(bundleDir, name);
+}
+
+/**
+ * 读取 profile manifest 的 patchReload（'live' | 'startup'，默认 'live'）。
+ */
+function patchReloadOf(pkgJson) {
+  const v = pkgJson && pkgJson.dsh && pkgJson.dsh.profile && pkgJson.dsh.profile.patchReload;
+  return v === 'startup' ? 'startup' : 'live';
 }
 
 /* ------------------------------------------------------------------ *
@@ -247,16 +339,21 @@ function readText(file) {
 }
 
 /**
- * 内置宿主 bundle：不在 node_modules，但提供基础插件行（base layer）。
+ * 内置宿主 bundle：由 dsh 安装提供（不在 profile node_modules），
+ * 提供基础插件行（base layer）。对齐上游 INSTALLATION_OWNED_PROFILE_TUPLES。
+ * 通过双锚点解析从 dsh 安装目录读取其 patch 文件。
  */
-const BUILTIN_BUNDLES = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'];
+const BUILTIN_BUNDLES = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-ai/dsh-headless'];
 
 /**
  * 扫描一个 profile，返回：
  * {
  *   profile, profileDir, packageJson,
  *   bundles: [包名...],
+ *   patchReload: 'live' | 'startup',
+ *   bundleSources: [ { name, pkgName, dir, patchFile, builtin } ],
  *   patchEntries: [ profile 自身 cordis.patch.yml 顶层条目 ],
+ *   homePatchFile?, homePatchEntries?,
  *   plugins: [ { id, name, pkg, source, enabled, disabled, config, inject, entryIds } ],
  *   errors: [string]
  * }
@@ -268,6 +365,8 @@ function scanPlugins(profile = 'web') {
     profileDir: dir,
     packageJson: null,
     bundles: [],
+    patchReload: 'live',
+    bundleSources: [],
     patchEntries: [],
     plugins: [],
     errors: [],
@@ -310,19 +409,25 @@ function scanPlugins(profile = 'web') {
     byName.get(name).push(mount);
   };
 
+  result.patchReload = patchReloadOf(pkgJson);
+  result.bundleSources = []; // 每个 bundle 的解析信息 { name, pkgName, dir, patchFile, builtin }
+
   for (const bundle of result.bundles) {
     const pkgName = normalizeBundleName(bundle);
-    const patchFile = path.join(dir, 'node_modules', pkgName, 'cordis.patch.yml');
-    const text = readText(patchFile);
-    if (text === null) {
-      if (BUILTIN_BUNDLES.includes(bundle)) {
-        result.skipped = result.skipped || [];
-        result.skipped.push(bundle);
-      } else {
-        result.errors.push(`bundle [${bundle}] 未找到 cordis.patch.yml（包可能未安装）`);
-      }
+    if (!pkgName) continue; // 过滤空字符串
+    const bundleDir = findBundleDir(dir, pkgName);
+    if (!bundleDir) {
+      result.errors.push(`bundle [${bundle}] 未安装（profile node_modules 与 dsh 安装均未找到 ${pkgName}）`);
       continue;
     }
+    const patchFile = bundlePatchFile(bundleDir);
+    const text = readText(patchFile);
+    if (text === null) {
+      result.errors.push(`bundle [${bundle}] 未找到 patch 文件（${path.basename(patchFile)}）`);
+      continue;
+    }
+    const builtin = BUILTIN_BUNDLES.includes(pkgName);
+    result.bundleSources.push({ name: bundle, pkgName, dir: bundleDir, patchFile, builtin });
     const entries = parsePatch(text);
     for (const e of entries) {
       if (e.insert && Array.isArray(e.insert)) {
@@ -366,6 +471,21 @@ function scanPlugins(profile = 'web') {
     }
   }
 
+  // 应用 home 级用户 patch 层（$DSH_HOME/cordis.patch.yml），优先级最高
+  const homeFile = homePatchFile();
+  const homeText = readText(homeFile);
+  if (homeText !== null) {
+    result.homePatchFile = homeFile;
+    result.homePatchEntries = parsePatch(homeText);
+    for (const e of result.homePatchEntries) {
+      if (e.insert && Array.isArray(e.insert)) {
+        for (const it of e.insert) applyOverride(byId, it);
+      } else {
+        applyOverride(byId, e);
+      }
+    }
+  }
+
   result.plugins = [...byId.values()];
 
   // 附加信息：同一包名被多个不同 id 挂载（double-mount 信号）
@@ -386,7 +506,14 @@ function scanPlugins(profile = 'web') {
 }
 
 function normalizeBundleName(bundle) {
-  let s = String(bundle);
+  let s = String(bundle).trim();
+  if (!s) return '';
+  // workspace:../pkg 或 workspace:pkg -> 取包名（pnpm workspace 协议）
+  if (s.startsWith('workspace:')) {
+    s = s.slice(10).replace(/\\/g, '/').replace(/\/+$/, '');
+    const seg = s.split('/');
+    s = seg[seg.length - 1];
+  }
   // github:owner/repo#branch -> repo
   if (s.startsWith('github:')) {
     s = s.slice(7).split('#')[0].replace(/\/+$/, '');
@@ -690,7 +817,19 @@ function setPluginEnabled(profile, id, enabled) {
   }
 
   fs.writeFileSync(file, lines.join('\r\n') + '\r\n', 'utf8');
-  return { ok: true, file, backup: existed ? bak : null, enabled };
+
+  // 读取 profile 的 patchReload（live 热重载 / startup 需重启），供 CLI 提示
+  let patchReload = 'live';
+  try {
+    const mf = path.join(dir, 'package.json');
+    if (fs.existsSync(mf)) {
+      const manifest = JSON.parse(fs.readFileSync(mf, 'utf8'));
+      patchReload = patchReloadOf(manifest);
+    }
+  } catch {
+    // 忽略
+  }
+  return { ok: true, file, backup: existed ? bak : null, enabled, patchReload };
 }
 
 /* ------------------------------------------------------------------ *
@@ -714,8 +853,13 @@ function fmtIssues(issues) {
 }
 
 module.exports = {
+  dshHome,
   profilesRoot,
   profileDir,
+  homePatchFile,
+  findBundleDir,
+  bundlePatchFile,
+  patchReloadOf,
   scanPlugins,
   runChecks,
   setPluginEnabled,

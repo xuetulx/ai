@@ -26,7 +26,13 @@ function runCheck(profileName) {
       for (const it of severe) {
         console.log('  [' + it.severity.toUpperCase() + '] ' + it.msg);
       }
-      console.log('  提示：用 guard.bat status/check 查看详情或一键启停插件，修改后需重启生效。\n');
+      let effectNote = '修改后需重启生效';
+      try {
+        if (core.patchReloadOf(scan.packageJson) === 'live') effectNote = '该 profile 为 live 热重载，修改后即时生效';
+      } catch {
+        // 忽略
+      }
+      console.log('  提示：用 guard.bat status/check 查看详情或一键启停插件，' + effectNote + '。\n');
     } else {
       console.log('[dsh-plugin-guard] 插件树检查通过，未发现冲突或启动风险。');
     }

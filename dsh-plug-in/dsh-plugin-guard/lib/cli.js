@@ -46,10 +46,13 @@ function cmdScan(args) {
   const scan = core.scanPlugins(args.profile);
   printHeader(args.profile);
   for (const e of scan.errors) console.log('  [ERR] ' + e);
-  if (scan.skipped && scan.skipped.length) {
-    console.log('  [SKIP] 内置宿主 bundle（无需安装）: ' + scan.skipped.join(', '));
+  console.log(`  bundles : ${scan.bundles.length}  插件条目 : ${scan.plugins.length}  reload: ${scan.patchReload}`);
+  if (scan.bundleSources && scan.bundleSources.length) {
+    console.log('  bundle 解析:');
+    for (const b of scan.bundleSources) {
+      console.log(`    - ${b.name}${b.builtin ? ' (内置/dsh安装)' : ''} -> ${b.patchFile}`);
+    }
   }
-  console.log(`  bundles : ${scan.bundles.length}  插件条目 : ${scan.plugins.length}`);
   console.log('');
   for (const p of scan.plugins) {
     console.log(core.fmtPlugin(p));
@@ -79,9 +82,7 @@ function cmdStatus(args) {
   const issues = core.runChecks(scan);
   printHeader(args.profile);
   for (const e of scan.errors) console.log('  [ERR] ' + e);
-  if (scan.skipped && scan.skipped.length) {
-    console.log('  [SKIP] 内置宿主 bundle: ' + scan.skipped.join(', '));
-  }
+  console.log(`  reload : ${scan.patchReload}（${scan.patchReload === 'live' ? '热重载生效，无需重启' : '需重启生效'}）`);
   const enabled = scan.plugins.filter((p) => !p.disabled).length;
   const disabled = scan.plugins.length - enabled;
   console.log(`  已启用 : ${enabled}  已禁用 : ${disabled}`);
@@ -120,7 +121,11 @@ function cmdSet(args, enabled) {
   console.log(`  文件  : ${r.file}`);
   if (r.backup) console.log(`  备份  : ${r.backup}`);
   console.log('');
-  console.log('  注意：需要重启 dsh web（npx @deepseek-ai/dsh web --patch）才会生效。');
+  if (r.patchReload === 'live') {
+    console.log('  生效  : 该 profile 为 live 热重载，patch 已即时生效，无需重启。');
+  } else {
+    console.log('  生效  : 该 profile 为 startup 重载，需重启 dsh web 后生效。');
+  }
   console.log('');
   return 0;
 }
