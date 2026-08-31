@@ -5,6 +5,13 @@ DSH Desktop - DeepSeek Harness 桌面控制器
   - 开启服务：后台执行 `npx -y @deepseek-ai/dsh web --no-open`（Windows 经 cmd.exe 包装）
   - 关闭服务：终止上述进程及其子进程
   - 打开DSH：在默认浏览器中打开 http://127.0.0.1:3080
+  - 版本感知：启动时后台查询 npm 上 @deepseek-ai/dsh 的 latest 版本并展示
+
+官方 CLI 对齐（deepseek-ai/deepseek-harness）：
+  - `dsh web` 是 `dsh --profile web` 的官方保留别名，两者等价；
+  - 官方自 v0.1.0-rc.8 起本机启动默认自动打开浏览器，`--no-open` 为官方正式参数；
+  - 官方禁止 `--host 0.0.0.0`（防 RCE 暴露到网络），本工具固定 127.0.0.1:3080 符合官方安全基线；
+  - 每次启动官方会打印带 token 的 URL，浏览器凭 cookie 交接，本工具日志区实时透出。
 
 依赖：仅 Python 3.8+ 标准库（tkinter / subprocess / webbrowser / threading）
 """
@@ -23,14 +30,16 @@ from tkinter import ttk, messagebox, scrolledtext
 
 
 APP_TITLE = "DSH Desktop"
-APP_VERSION = "1.0.9"
+APP_VERSION = "1.1.0"
 DSH_HOST = "127.0.0.1"
 DSH_PORT = 3080
 DSH_URL = f"http://{DSH_HOST}:{DSH_PORT}"
 DSH_CMD_NAME = "npx"
 DSH_PACKAGE = "@deepseek-ai/dsh"
 DSH_SUBCMD = "web"
-DSH_EXTRA_ARGS = ["--no-open"]  # 仅启动服务，不自动打开浏览器（避免与"打开DSH"按钮重复开标签）
+DSH_EXTRA_ARGS = ["--no-open"]  # 官方正式参数：仅启动服务，不自动打开浏览器（避免与"打开DSH"按钮重复开标签）
+# 版本检查内部消息前缀（经 _msg_queue 回传，避免子线程直接操作 tkinter）
+_VERSION_MSG_PREFIX = "__VERSION__|"
 
 
 def build_start_command() -> list[str]:
@@ -38,10 +47,37 @@ def build_start_command() -> list[str]:
 
     Windows 上 npx 实际是 npx.cmd 批处理，CreateProcess 无法直接执行，
     必须经 cmd.exe 包装；`-y` 跳过 npx 首次安装包时的交互确认。
+    官方命令：npx -y @deepseek-ai/dsh web --no-open（`dsh web` ≡ `dsh --profile web`）
     """
     if os.name == "nt":
         return ["cmd", "/c", DSH_CMD_NAME, "-y", DSH_PACKAGE, DSH_SUBCMD, *DSH_EXTRA_ARGS]
     return [DSH_CMD_NAME, "-y", DSH_PACKAGE, DSH_SUBCMD, *DSH_EXTRA_ARGS]
+
+
+def fetch_latest_dsh_version(timeout: float = 8.0) -> str | None:
+    """查询 npm 上 @deepseek-ai/dsh 的 latest 版本号（对应官方 dist-tag: latest）。
+
+    失败（未装 npm / 无网络 / 超时）返回 None，调用方静默处理。
+    Windows 上 npm 为 npm.cmd，CreateProcess 无法直接执行，需经 cmd /c 包装。
+    """
+    if os.name == "nt":
+        cmd = ["cmd", "/c", "npm", "view", DSH_PACKAGE, "version", "--no-audit", "--no-fund"]
+    else:
+        cmd = ["npm", "view", DSH_PACKAGE, "version", "--no-audit", "--no-fund"]
+    try:
+        r = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+            timeout=timeout,
+        )
+        lines = [ln.strip() for ln in r.stdout.splitlines() if ln.strip()]
+        return lines[-1] if lines else None
+    except Exception:
+        return None
 
 
 def port_in_use(host: str = DSH_HOST, port: int = DSH_PORT, timeout: float = 0.3) -> bool:
@@ -325,6 +361,7 @@ class DSHDesktopApp:
         self._bind_close()
         self._refresh_status()
         self._drain_queue()
+        self._check_version()  # 后台查询官方 latest 版本，不阻塞 UI
 
     # ---------- 窗口 ----------
     def _build_window(self):
@@ -407,6 +444,16 @@ class DSHDesktopApp:
             font=("Consolas", 10),
         )
         self.url_text.pack(side="right")
+
+        # 官方版本感知：npm latest 版本（后台查询，失败则显示"未知"）
+        self.version_text = tk.Label(
+            inner,
+            text="DSH 官方版本：检查中...",
+            bg=self.CARD_BG,
+            fg=self.MUTED_COLOR,
+            font=("Microsoft YaHei UI", 9),
+        )
+        self.version_text.pack(anchor="w", padx=(24, 0), pady=(6, 0))
 
         # 按钮区
         btn_frame = tk.Frame(self.root, bg=self.BG_COLOR)
@@ -564,13 +611,35 @@ class DSHDesktopApp:
         except Exception:
             pass
 
+    # ---------- 版本感知 ----------
+    def _check_version(self):
+        """后台线程查询官方 latest 版本，结果经消息队列回传主线程。"""
+        threading.Thread(target=self._version_worker, daemon=True).start()
+
+    def _version_worker(self):
+        v = fetch_latest_dsh_version()
+        if v:
+            try:
+                self._msg_queue.put(f"{_VERSION_MSG_PREFIX}{v}")
+            except Exception:
+                pass
+
+    def _show_version(self, version: str):
+        self.version_text.config(
+            text=f"DSH 官方版本：v{version}（npm latest）",
+            fg=self.MUTED_COLOR,
+        )
+
     def _drain_queue(self):
         """主线程轮询消息队列，将子进程输出写入日志（每轮限流，避免刷屏卡顿）。"""
         drained = 0
         try:
             while drained < 300:
                 line = self._msg_queue.get_nowait()
-                self._log(line)
+                if line.startswith(_VERSION_MSG_PREFIX):
+                    self._show_version(line[len(_VERSION_MSG_PREFIX):])
+                else:
+                    self._log(line)
                 drained += 1
         except queue.Empty:
             pass

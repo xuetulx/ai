@@ -3,6 +3,27 @@
 > DSH Desktop 版本变更日志
 > 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.0] - 2026-08-31
+
+### Added
+- **版本感知**：启动时后台查询 npm 上 `@deepseek-ai/dsh` 的 latest 版本（`npm view ... version`，8s 超时静默失败），状态卡片显示"DSH 官方版本：vX.X.X（npm latest）"
+  - 查询结果经 `_msg_queue` 特殊前缀消息回传主线程，遵循项目既有线程安全模式，不触碰 tkinter
+- README 新增"与官方 CLI 对齐"小节，引用官方 npm dist-tag：`latest` = `0.1.1-rc.2`（master 分支 `0.1.2-alpha.2`）
+
+### Changed
+- **对齐官方 deepseek-ai/deepseek-harness 最新 CLI 变更**：
+  - 确认 `dsh web` ≡ `dsh --profile web`（官方硬编码保留别名，两种写法等价）
+  - 确认 `--no-open` 为**官方正式参数**（官方自 v0.1.0-rc.8 起本机启动默认自动打开浏览器；`--host 0.0.0.0` 被官方显式禁止，防 RCE 暴露到局域网）
+  - 本工具固定 `127.0.0.1:3080` + `--no-open`，符合官方安全基线，杜绝双浏览器窗口（v1.0.8 移除 `--no-open` 属误判，v1.0.9 恢复正确，本版以官方源码再次复核确认）
+- 模块 docstring 补充官方 CLI 对齐说明
+- **版本查询兼容修复**：Windows 上 `npm` 为 `npm.cmd`，`subprocess.run` 直接执行失败（与 npx 同因），改为 `cmd /c npm view ...` 包装；实测返回 `0.1.1-rc.2`
+- README 功能表新增"版本感知"行；开启服务命令标注 `-y` 参数
+
+### Technical
+- 修改前已备份 `main.py.bak` / `README.md.bak`
+- 验证：read_lints 0 错误、py_compile OK
+- `APP_VERSION` 升至 1.1.0
+
 ## [1.0.9] - 2026-08-25
 
 ### Changed

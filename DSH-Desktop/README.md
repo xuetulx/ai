@@ -1,6 +1,6 @@
 # DSH Desktop
 
-> DeepSeek Harness 桌面控制器 v1.0.5
+> DeepSeek Harness 桌面控制器 v1.1.0
 
 一个轻量级 Windows 桌面应用，用于控制 [DeepSeek Harness (DSH)](https://www.npmjs.com/package/@deepseek-ai/dsh) 本地服务的启停与访问。
 
@@ -8,9 +8,24 @@
 
 | 按钮       | 作用                                                                     |
 | ---------- | ------------------------------------------------------------------------ |
-| 开启服务   | 后台执行 `npx @deepseek-ai/dsh web --no-open`，启动 Web UI（端口 3080）            |
+| 开启服务   | 后台执行 `npx -y @deepseek-ai/dsh web --no-open`，启动 Web UI（端口 3080）          |
 | 关闭服务   | 终止本应用启动的进程树；若端口被外部实例占用，可强制结束占用进程         |
 | 打开DSH    | 在系统默认浏览器中打开 `http://127.0.0.1:3080`                          |
+| 版本感知   | 启动时后台查询 npm 上 `@deepseek-ai/dsh` 的 latest 版本，显示在状态卡片   |
+
+## 与官方 CLI 对齐（deepseek-ai/deepseek-harness）
+
+本工具的命令与官方最新 CLI 保持一致：
+
+| 官方 CLI | 说明 |
+| -------- | ---- |
+| `dsh web` ≡ `dsh --profile web` | `dsh web` 是官方保留别名，两者等价 |
+| `--no-open` | 官方正式参数；官方自 v0.1.0-rc.8 起本机启动默认自动打开浏览器，本工具用它避免与"打开DSH"按钮重复开标签 |
+| `--host 127.0.0.1` | 官方默认值；**官方禁止 `0.0.0.0`**（防止把 RCE 暴露到局域网），本工具固定回环地址符合官方安全基线 |
+| `--port 3080` | 官方默认端口；服务地址 `http://127.0.0.1:3080` |
+| token URL | 每次启动官方打印带 token 的 URL，浏览器凭 cookie 交接；本工具日志区实时透出该输出 |
+
+> 参考：npm dist-tag `latest` = `0.1.1-rc.2`（master 分支 `0.1.2-alpha.2`）。本工具启动时会在状态卡片显示官方最新版本，便于判断是否升级。
 
 ## 截图（运行中）
 
