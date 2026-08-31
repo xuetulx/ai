@@ -1,5 +1,36 @@
 # 版本迭代日志
 
+## v1.11 (2026-08-31)
+- **变更类型**: 部署收尾
+- **变更摘要**: 运行 deploy-codebuddy.ps1 完成规则部署，清理部署脚本备份
+- **影响文件**:
+  - 部署: `rules\04-git-mcp-troubleshooting.md` → `C:\Users\Administrator\.codebuddy\rules\`（10 文件 + settings.json 一致性校验通过）
+  - 删除: `deploy-codebuddy.ps1.bak`
+- **配套动作**: 重新加载/重启 CodeBuddy 后新规则生效（按需触发：MCP 网络失败场景）
+
+## v1.10 (2026-08-31)
+- **变更类型**: 规则挂载
+- **变更摘要**: 将 Git-MCP 网络排查文档挂载为 Agent-Requested 按需加载规则（单一事实源指向 06-MCP 完整指南）
+- **影响文件**:
+  - 新增: `02-RULE/Agent-Requested/04-git-mcp-troubleshooting.mdc`（frontmatter version 1.0，alwaysApply: false，来源指向 `06-MCP/Git-MCP-网络连接失败排查与修复.md`）
+- **配套动作**: 运行 deploy-codebuddy.ps1 将规则部署到 CodeBuddy 用户级规则目录生效
+- **追加变更**: deploy-codebuddy.ps1 `$files` 清单新增 `04-git-mcp-troubleshooting.mdc → rules\04-git-mcp-troubleshooting.md`（备份 `.bak`）
+
+## v1.9 (2026-08-31)
+- **变更类型**: 文档新增
+- **变更摘要**: 新增 Git/GitHub MCP 网络连接失败排查与修复指南（可直接被任何 AI 工具读取应用）
+- **影响文件**:
+  - 新增: `06-MCP/Git-MCP-网络连接失败排查与修复.md`（诊断步骤、修复配置片段、验证脚本、踩坑清单、实战案例；frontmatter version 1.0）
+- **配套动作**: 无（纯文档）
+
+## v1.8 (2026-08-31)
+- **变更类型**: 故障修复
+- **变更摘要**: 修复 GitHub MCP 连接报"网络失败"——根因是 node 子进程访问 `api.github.com` TLS 证书校验失败（Clash MITM 证书不被 node 默认 CA 信任），为 GitHub server 注入代理环境变量
+- **影响文件**:
+  - 修改: `.mcp.json`（GitHub server `env` 新增 `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` = `127.0.0.1:7897`，保留 `NODE_OPTIONS: --use-system-ca`；原文件备份为 `.mcp.json.bak`）
+- **诊断依据**: 终端实测 node 直连/走代理均报 `UNABLE_TO_VERIFY_LEAF_SIGNATURE`；`node --use-system-ca` + 代理后返回 200；git 链路正常；Windows 系统代理关闭（ProxyEnable=0），Clash Verge TUN 模式接管流量
+- **配套动作**: 重载 MCP / 重启 CodeBuddy 生效；访问私有仓库需在 env 添加 `GITHUB_PERSONAL_ACCESS_TOKEN` 环境变量引用
+
 ## v1.6 (2026-08-25)
 - **变更类型**: 配置修复
 - **变更摘要**: 用户级 MCP 配置占位符替换为环境变量引用；新增项目级 `.mcp.json`

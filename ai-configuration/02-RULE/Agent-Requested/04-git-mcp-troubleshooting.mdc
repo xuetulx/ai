@@ -1,0 +1,59 @@
+---
+description: "Git/GitHub MCP 网络连接失败排查 - 处理 MCP 报网络失败/连接失败时加载"
+globs: ""
+alwaysApply: false
+enabled: true
+version: 1.0
+last_updated: 2026-08-31
+---
+
+# Git/GitHub MCP 网络连接失败排查
+
+> 来源：`06-MCP/Git-MCP-网络连接失败排查与修复.md`（完整指南，含诊断命令、验证脚本、实战案例）
+
+## 核心结论（先读）
+
+1. **MCP 子进程（node/npx）不自动继承系统代理**，浏览器/git 能访问 ≠ MCP 能访问
+2. **git 代理 ≠ node 代理**，两套独立配置，git 正常不代表 MCP 正常
+3. 国内环境最高发：node 访问 GitHub 报 `UNABLE_TO_VERIFY_LEAF_SIGNATURE`
+   → 代理 MITM 证书不被 node 默认 CA 信任（Clash/V2Ray 场景），需 `--use-system-ca`
+
+## 快速诊断
+
+```powershell
+# node 链路（复现 MCP 报错）
+node -e "fetch('https://api.github.com').then(r=>console.log('NODE OK:', r.status)).catch(e=>console.error('NODE FAIL:', e.cause?.code || e.message))"
+
+# 确认代理端口（Clash Verge 默认 7897）
+(Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings').ProxyServer
+
+# 修复验证：代理 + 系统 CA（成功应输出 NODE OK: 200）
+$env:HTTP_PROXY="http://127.0.0.1:7897"; $env:HTTPS_PROXY="http://127.0.0.1:7897"; $env:NO_PROXY="localhost,127.0.0.1"
+node --use-system-ca -e "fetch('https://api.github.com').then(r=>console.log('NODE OK:', r.status)).catch(e=>console.error('NODE FAIL:', e.cause?.code || e.message))"
+```
+
+## 修复要点（.mcp.json 的 env 段）
+
+```json
+"env": {
+  "NODE_OPTIONS": "--use-system-ca",
+  "HTTP_PROXY": "http://127.0.0.1:7897",
+  "HTTPS_PROXY": "http://127.0.0.1:7897",
+  "NO_PROXY": "localhost,127.0.0.1",
+  "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+}
+```
+
+1. [BLOCK] 禁止硬编码 token 入库，必须用环境变量引用
+2. [BLOCK] Windows 路径必须正斜杠 `D:/repo`，禁止 `D:\repo`
+3. [DO] 修改 `.mcp.json` 前先备份 `.bak`，改后必须**完全重启** AI 客户端（旧进程持有旧 env）
+4. [ASK] 访问私有仓库需确认 token scope（至少 `repo`）
+
+## 故障分层速查
+
+| 现象 | 定位 | 处理 |
+|---|---|---|
+| 终端手动跑 MCP 命令也报错 | MCP 子进程网络（代理/证书/token） | 修 `.mcp.json` env |
+| 终端正常、AI 工具失败 | 客户端配置/协议/版本 | 重载 MCP / 重启客户端 |
+| `git ls-remote` 失败 | git 自身网络 | 修 git 代理（与 MCP 无关） |
+| JSON 语法错误/多逗号 | 配置非法，进程崩溃 | 校验 JSON |

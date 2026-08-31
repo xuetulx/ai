@@ -42,6 +42,7 @@ $files = @(
     @{ from = '02-RULE\Agent-Requested\01-py-coding.mdc';   to = 'rules\01-py-coding.md' },
     @{ from = '02-RULE\Agent-Requested\02-git-rules.mdc';   to = 'rules\02-git-rules.md' },
     @{ from = '02-RULE\Agent-Requested\03-engineering.mdc'; to = 'rules\03-engineering.md' },
+    @{ from = '02-RULE\Agent-Requested\04-git-mcp-troubleshooting.mdc'; to = 'rules\04-git-mcp-troubleshooting.md' },
     @{ from = '03-SKILL\skill-code-review\SKILL.md';        to = 'skills\code-review\SKILL.md' },
     @{ from = '03-SKILL\skill-security-review\SKILL.md';    to = 'skills\security-review\SKILL.md' },
     @{ from = '03-SKILL\skill-git-workflow\SKILL.md';       to = 'skills\git-workflow\SKILL.md' },
