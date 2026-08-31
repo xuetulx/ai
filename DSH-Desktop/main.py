@@ -23,14 +23,14 @@ from tkinter import ttk, messagebox, scrolledtext
 
 
 APP_TITLE = "DSH Desktop"
-APP_VERSION = "1.0.5"
+APP_VERSION = "1.0.9"
 DSH_HOST = "127.0.0.1"
 DSH_PORT = 3080
 DSH_URL = f"http://{DSH_HOST}:{DSH_PORT}"
 DSH_CMD_NAME = "npx"
 DSH_PACKAGE = "@deepseek-ai/dsh"
 DSH_SUBCMD = "web"
-DSH_EXTRA_ARGS = ["--no-open"]  # 仅启动服务，不自动打开浏览器
+DSH_EXTRA_ARGS = ["--no-open"]  # 仅启动服务，不自动打开浏览器（避免与"打开DSH"按钮重复开标签）
 
 
 def build_start_command() -> list[str]:
