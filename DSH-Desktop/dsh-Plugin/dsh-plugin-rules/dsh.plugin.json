@@ -1,0 +1,11 @@
+{
+  "name": "dsh-plugin-rules",
+  "description": "规则注入插件：将 ai-rules/split 规则集同步到 DSH 全局 AGENTS.md",
+  "version": "1.0.0",
+  "entry": {
+    "name": "dsh-plugin-rules"
+  },
+  "client": {
+    "platform": "web"
+  }
+}
