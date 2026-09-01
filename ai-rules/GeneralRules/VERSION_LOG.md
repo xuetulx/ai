@@ -356,6 +356,36 @@
 
 ---
 
+## v1.9 (2026-09-01)
+
+### 新增功能 — GitHub 网络代理排查要点
+
+1. **`04_version_control.md` 新增 §8 GitHub 网络代理排查要点**
+   - 先判定加速方案（Watt Toolkit vs Clash）再动手，避免误配代理
+   - Watt Toolkit（Steam++）场景：hosts 劫持 + 本地 80/443 透明转发，git 不配代理直连
+   - Clash 场景：端口三查（监听/进程身份/实测），`CONNECT 405` 端口禁止沿用
+   - 一次性 `-c http.proxy` 临时代理，不污染全局 config
+   - 版本号 v1.4 → v1.5
+
+2. **`09_版本控制与Git规则.md`（split）新增 §10.5**（同步副本同更）
+   - `[DO]` 判定加速方案（Watt Toolkit / Clash）
+   - `[BLOCK]` Watt Toolkit 场景禁止给 git 配代理
+   - `[BLOCK]` `CONNECT 405` 端口禁止沿用
+   - 一次性 `-c` 参数临时代理
+
+### 影响文件
+
+- `GeneralRules/04_version_control.md` — v1.4 → v1.5（新增 §8）
+- `split/File-operation-rules/09_版本控制与Git规则.md` — 新增 §10.5
+- `DSH-Desktop/dsh-Plugin/dsh-plugin-rules/rules/File-operation-rules/09_版本控制与Git规则.md` — 同步新增 §10.5
+
+### 同步待办
+
+- [ ] 同步至 CodeBuddy 全局规则
+- [ ] 推送至 GitHub `ai-rules/GeneralRules`
+
+---
+
 ## 格式说明
 
 ### 版本号规则

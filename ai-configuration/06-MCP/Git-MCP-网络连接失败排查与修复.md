@@ -1,7 +1,7 @@
 ---
-description: "Git/GitHub MCP 在 AI 工具中报『网络连接失败』的完整排查与修复指南（含诊断命令、配置片段、验证脚本）"
-version: 1.0
-last_updated: 2026-08-31
+description: "Git/GitHub MCP 在 AI 工具中报『网络连接失败』的完整排查与修复指南（含诊断命令、配置片段、验证脚本、Watt Toolkit 加速模式）"
+version: 1.1
+last_updated: 2026-09-01
 ---
 
 # Git/GitHub MCP 网络连接失败：排查与修复指南
@@ -226,7 +226,64 @@ Clash 根证书已装 Windows 系统证书库。
 
 ---
 
-## 7. 参考
+## 7. 附录：Watt Toolkit（Steam++）加速模式（2026-09-01 实战补充）
+
+> **前置**：上面 §0~§6 以 **Clash 类代理**（独立端口 + node 显式代理）为环境假设。
+> 本附录补充本机实测的另一种常见方案——**Watt Toolkit（Steam++）加速**，
+> 适用于 **`git push`/`git fetch` 直连报 `Connection reset`** 的场景。
+
+### 7.1 两种加速方案速查
+
+| 维度 | Watt Toolkit（Steam++） | Clash 类代理 |
+|---|---|---|
+| 原理 | **hosts 劫持 + 本地 80/443 透明转发** | 独立代理端口（7890/7897） |
+| git 是否配代理 | **不需要，直连即走加速** | 需要 `git config http.proxy` |
+| node/MCP 是否配代理 | 不需要（透明） | 需要 `HTTP_PROXY` + `--use-system-ca` |
+| 生效标志 | hosts 指向 `127.0.0.1` + `Steam++.Accelerator.exe` 监听 80/443 | 代理端口有监听 + 系统代理开启 |
+| 加速未启动时的报错 | `Connection reset` / `Couldn't connect` | 连接被拒（端口无监听） |
+
+### 7.2 判定命令（先判定方案，再动手修复）
+
+```powershell
+# ① hosts 是否劫持 github（Watt Toolkit 加速生效标志）
+findstr /I "github" C:\Windows\System32\drivers\etc\hosts
+#   → 看到 127.0.0.1 github.com / api.github.com ... = Watt Toolkit 加速
+
+# ② 加速进程是否监听 80/443
+netstat -ano | findstr ":443" | findstr "LISTENING"
+tasklist | findstr /I "watt steam"
+#   → Steam++.Accelerator.exe 监听 80/443 = 加速器已启动
+
+# ③ 系统代理（Clash 类环境判断）
+(Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings').ProxyEnable
+(Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings').ProxyServer
+
+# ④ git 代理配置（看当前是哪种模式）
+git config --get http.proxy
+```
+
+### 7.3 Watt Toolkit 场景的修复动作
+
+1. 打开 Watt Toolkit，确认 **网络加速** 已开启
+2. 确认 hosts 劫持存在（`findstr /I github ...hosts` 有输出）
+3. 确认 `Steam++.Accelerator.exe` 监听 80/443（`netstat`）
+4. **直接 `git push`**，不要配 `http.proxy`（配了反而绕过加速器失败）
+
+> ⚠️ **端口有效性三查**：代理端口不能拿来就用。`git push` 报 `CONNECT 405`
+> = 端口在监听但不是 HTTP 代理（如 clash-verge-service 的 33211 管理端口），
+> 应继续寻找真实代理端口或改用 Watt Toolkit 直连。
+
+### 7.4 实战记录（2026-09-01）
+
+- 现象：`git push -u origin v1.4.1` → `Failed to connect to github.com port 443: Connection reset`
+- 误判：注册表残留 `127.0.0.1:7897`（Clash），但端口无监听；`33211`（clash-verge-service）报 `CONNECT 405`
+- 真相：本机用 **Watt Toolkit 加速**，hosts 劫持 + 本地 443 透明转发
+- 修复：什么都不配，直接 `git push` 成功
+- 详细记录：`ai-configuration/07-TROUBLESHOOTING/2026-09-01-GitHub推送WattToolkit加速排查.md`
+
+---
+
+## 8. 参考
 
 - Node 系统 CA 支持：<https://nodejs.org/api/cli.html#--use-system-ca>（Node ≥ 22.9）
 - MCP 官方 servers：<https://github.com/modelcontextprotocol/servers>

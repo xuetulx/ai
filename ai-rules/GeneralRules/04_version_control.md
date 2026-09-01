@@ -1,8 +1,8 @@
 ---
 trigger: on_git_operation
 priority: high
-version: 1.4
-last_updated: 2026-07-16T12:00
+version: 1.5
+last_updated: 2026-09-01
 ---
 
 # 04 版本控制与工程规范
@@ -222,3 +222,34 @@ diff <(grep -oP '\[BLOCK\].*' AGENTS.md | sort) \
 2. `[DO]` 重大变更保留旧版本文件（加 `_v{旧版本}.md` 后缀或归档至 `docs/history/`）
 3. `[DO]` 在 `VERSION_LOG.md` 记录变更摘要
 4. `[BLOCK]` 不得删除或覆盖历史版本而不保留备份
+
+---
+
+## 8. GitHub 网络代理排查要点（v1.5 新增）
+
+> **适用**：`git push`/`git fetch` 到 GitHub 报 `Connection reset` / `Couldn't connect to server`。
+> 完整排查文档：`ai-configuration/06-MCP/Git-MCP-网络连接失败排查与修复.md`
+> 实战记录：`ai-configuration/07-TROUBLESHOOTING/2026-09-01-GitHub推送WattToolkit加速排查.md`
+
+### 8.1 先判定加速方案，再动手 [DO]
+
+`Connection reset` ≠ 没配代理。国内常见两种方案，判定后再决定是否配代理：
+
+| 方案 | 原理 | git 是否配代理 | 判定命令 |
+|---|---|---|---|
+| **Watt Toolkit（Steam++）** | hosts 劫持 + 本地 80/443 透明转发 | **不配**，直连即走加速 | `findstr /I github C:\Windows\System32\drivers\etc\hosts` + `tasklist \| findstr /I "watt steam"` |
+| **Clash 类代理** | 独立代理端口（7890/7897） | 需要 `http.proxy` | `netstat -ano \| findstr "7897 7890"` + 系统代理注册表 |
+
+### 8.2 Watt Toolkit 场景 [DO]
+
+1. `[DO]` 确认 hosts 劫持存在（`findstr /I github ...hosts` 有 `127.0.0.1 github.com`）
+2. `[DO]` 确认 `Steam++.Accelerator.exe` 监听 80/443（`netstat`）
+3. `[BLOCK]` **不要**给 git 配 `http.proxy`（会绕过加速器反而失败）
+4. `[DO]` 直接 `git push` 重试
+
+### 8.3 Clash 类代理场景 [DO]
+
+1. `[DO]` 先确认代理端口有监听进程（`netstat`），不能拿来就用
+2. `[BLOCK]` 端口报 `CONNECT 405` = 不是 HTTP 代理（如 clash-verge-service 管理端口），禁止沿用
+3. `[DO]` 一次性参数临时代理：`git -c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897 push`（不写回全局 config，避免污染）
+4. `[ASK]` 需要持久化时，询问用户后再 `git config --global http.proxy`

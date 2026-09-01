@@ -69,3 +69,20 @@
 2. `[BLOCK]` 未经用户确认执行 `git merge`、`git rebase` 到原分支
 3. `[BLOCK]` 未经用户确认删除任何分支（包括 AI 自己创建的分支）
 4. `[DO]` 任务完成后提醒用户：当前所在分支、是否有未合并的分支
+
+### 10.5 GitHub 网络代理排查要点（v1.9 新增）
+
+> **适用**：`git push`/`git fetch` 到 GitHub 报 `Connection reset` / `Couldn't connect to server`。
+> 完整排查文档：`ai-configuration/06-MCP/Git-MCP-网络连接失败排查与修复.md` §7
+> 实战记录：`ai-configuration/07-TROUBLESHOOTING/2026-09-01-GitHub推送WattToolkit加速排查.md`
+
+1. `[DO]` **先判定加速方案再动手**：`Connection reset` ≠ 没配代理
+   - **Watt Toolkit（Steam++）**：hosts 劫持 + 本地 80/443 透明转发，git 不配代理直连即走加速
+     - 判定：`findstr /I github C:\Windows\System32\drivers\etc\hosts` 有 `127.0.0.1 github.com`，且 `tasklist | findstr /I "watt steam"` 有 `Steam++.Accelerator.exe`
+   - **Clash 类代理**：独立代理端口（7890/7897），git 需显式配 `http.proxy`
+     - 判定：`netstat -ano | findstr "7897 7890"` 有监听
+2. `[BLOCK]` Watt Toolkit 场景**禁止**给 git 配 `http.proxy`（会绕过加速器反而失败）
+3. `[BLOCK]` 代理端口报 `CONNECT 405` = 不是 HTTP 代理（如 clash-verge-service 管理端口），禁止沿用
+4. `[DO]` Clash 场景用一次性参数临时代理，不写回全局 config：
+   `git -c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897 push`
+5. `[ASK]` 需持久化代理时，询问用户后再 `git config --global http.proxy`

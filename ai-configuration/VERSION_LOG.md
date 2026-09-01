@@ -1,5 +1,19 @@
 # 版本迭代日志
 
+## v1.13 (2026-09-01)
+- **变更类型**: 文档新增 + 规则同步
+- **变更摘要**: 新增 GitHub 推送网络排查（Watt Toolkit 加速模式）文档，并同步至 ai-rules 与 DSH 插件规则
+- **影响文件**:
+  - 新增: `07-TROUBLESHOOTING/2026-09-01-GitHub推送WattToolkit加速排查.md`（frontmatter version 1.0；含现象、9 步诊断过程、识别方法、结论要点）
+  - 修改: `06-MCP/Git-MCP-网络连接失败排查与修复.md`（version 1.0 → 1.1；新增 §7 Watt Toolkit 加速模式附录：方案速查/判定命令/修复动作/实战记录）
+  - 修改: `ai-rules/GeneralRules/04_version_control.md`（v1.4 → v1.5；新增 §8 GitHub 网络代理排查要点）
+  - 修改: `ai-rules/split/File-operation-rules/09_版本控制与Git规则.md`（新增 §10.5）
+  - 修改: `DSH-Desktop/dsh-Plugin/dsh-plugin-rules/rules/File-operation-rules/09_版本控制与Git规则.md`（同步 §10.5）
+  - 修改: `DSH-Desktop/dsh-Plugin/dsh-plugin-gitops/rules/02_git_mcp_troubleshooting.md`（新增 §4 Watt Toolkit 要点）
+  - 修改: `DSH-Desktop/dsh-Plugin/dsh-plugin-gitops/package.json` + `README.md`（1.0.0 → 1.0.1）
+- **核心要点**: Watt Toolkit（Steam++）加速 = hosts 劫持 + 本地 80/443 透明转发，git 不配代理直连即走加速；Clash 类代理才需显式 `http.proxy`；代理端口 `CONNECT 405` 禁止沿用
+- **配套动作**: 已备份原文件 `*_backup_20260901.bak`
+
 ## v1.12 (2026-08-31)
 - **变更类型**: 文档新增
 - **变更摘要**: 新增 `07-TROUBLESHOOTING/` 问题排查归档：DSH Doctor 弹窗（计划任务）根因与方案 C（隐藏窗口）、`$` 变量被 cmd 吞掉等 Shell 踩坑清单
