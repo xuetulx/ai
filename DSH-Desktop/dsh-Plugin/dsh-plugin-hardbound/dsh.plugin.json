@@ -1,0 +1,11 @@
+{
+  "name": "dsh-plugin-hardbound",
+  "description": "硬边界插件：全局硬边界 + 核心行为原则同步到 DSH 全局 AGENTS.md",
+  "version": "1.0.0",
+  "entry": {
+    "name": "dsh-plugin-hardbound"
+  },
+  "client": {
+    "platform": "web"
+  }
+}

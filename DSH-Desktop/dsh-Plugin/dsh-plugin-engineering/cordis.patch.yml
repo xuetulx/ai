@@ -1,0 +1,5 @@
+# dsh-plugin-engineering bundle patch: mounts the engineering rules plugin row.
+# The row id must match the plugin's `export const name` in lib/index.js.
+- insert:
+    - id: plugin-engineering
+      name: 'dsh-plugin-engineering'

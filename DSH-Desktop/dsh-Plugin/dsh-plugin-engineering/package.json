@@ -1,0 +1,22 @@
+{
+  "name": "dsh-plugin-engineering",
+  "version": "1.0.0",
+  "description": "DSH 工程质量插件：工程质量规范 + Python 编码规范 + HOOK 机制文字化同步为 DSH 全局 AGENTS.md（多插件共存协议，幂等）",
+  "main": "lib/index.js",
+  "dsh": {
+    "bundle": {
+      "patch": "cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "cli": "node lib/cli.js"
+  },
+  "files": [
+    "lib",
+    "rules",
+    "cordis.patch.yml",
+    "dsh.plugin.json",
+    "README.md"
+  ],
+  "license": "MIT"
+}

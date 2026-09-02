@@ -1,0 +1,11 @@
+{
+  "name": "dsh-plugin-engineering",
+  "description": "工程质量插件：工程质量规范 + Python 编码规范 + HOOK 机制文字化同步到 DSH 全局 AGENTS.md",
+  "version": "1.0.0",
+  "entry": {
+    "name": "dsh-plugin-engineering"
+  },
+  "client": {
+    "platform": "web"
+  }
+}

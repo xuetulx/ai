@@ -1,0 +1,11 @@
+{
+  "name": "dsh-plugin-gitops",
+  "description": "GitOps 插件：Git 操作规范 + Git-MCP 网络排查要点同步到 DSH 全局 AGENTS.md",
+  "version": "1.0.0",
+  "entry": {
+    "name": "dsh-plugin-gitops"
+  },
+  "client": {
+    "platform": "web"
+  }
+}

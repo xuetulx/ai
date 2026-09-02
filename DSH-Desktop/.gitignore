@@ -5,7 +5,15 @@ __pycache__/
 
 # 构建产物
 build/
-*.spec
+dist/
+
+# EXE 发布产物与备份（spec 文件是项目核心，不忽略）
+DSH-Desktop.exe
+DSH-Desktop.exe.bak.*
+dist/DSH-Desktop.exe
+
+# 审计日志
+.ai_audit.log
 
 # DSH 服务运行时产物（非项目文件）
 dsh-usage/
@@ -13,6 +21,13 @@ dsh-usage-boot.log
 dist/dsh-usage-boot.log
 dist/dsh-usage/
 
+# 运行时日志与缓存（v1.4.1：统一收口到 log/ 与 cache/）
+log/
+cache/
+
 # 系统/编辑器
 Thumbs.db
 .DS_Store
+
+# AI 快照
+.snap.json

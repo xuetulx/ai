@@ -1,0 +1,5 @@
+# dsh-plugin-gitops bundle patch: mounts the gitops rules plugin row.
+# The row id must match the plugin's `export const name` in lib/index.js.
+- insert:
+    - id: plugin-gitops
+      name: 'dsh-plugin-gitops'

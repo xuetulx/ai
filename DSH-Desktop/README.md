@@ -1,6 +1,6 @@
 # DSH Desktop
 
-> DeepSeek Harness 桌面控制器 v1.3.2
+> DeepSeek Harness 桌面控制器 v1.4.0
 
 一个轻量级 Windows 桌面应用，用于控制 [DeepSeek Harness (DSH)](https://www.npmjs.com/package/@deepseek-ai/dsh) 本地服务的启停与访问。
 
@@ -8,19 +8,21 @@
 
 | 按钮       | 作用                                                                     |
 | ---------- | ------------------------------------------------------------------------ |
-| 开启服务   | 先弹"便携插件管理"窗勾选要注册的本地插件，再后台执行 `dsh web --no-open` 启动 Web UI（端口 3080） |
+| 开启服务   | 扫描 `dsh-Plugin/` 插件，**有改动**才弹"便携插件管理"窗勾选注册（无改动直接启动），再后台执行 `dsh web --no-open` 启动 Web UI（端口 3080） |
 | 关闭服务   | 终止本应用启动的进程树；若端口被外部实例占用，可强制结束占用进程         |
 | 打开DSH    | 在系统默认浏览器中打开 `http://127.0.0.1:3080`                          |
 | 版本感知   | 启动时后台查询 npm 上 `@deepseek-ai/dsh` 的 latest 版本，显示在状态卡片   |
 
-## 便携插件机制（v1.3.0）
+## 便携插件机制（v1.3.0 引入，v1.4.0 指纹感知）
 
 `DSH-Desktop/dsh-Plugin/` 下归置便携插件源（本地 checkout 或已构建产物），随 `DSH-Desktop` 文件夹一起便携迁移。换新环境时无需手动 `dsh plugin add`：
 
-- 点"开启服务"时弹出**便携插件管理**窗，扫描 `dsh-Plugin/` 下所有含 `package.json` 的子目录，显示名称 / 版本 / 已安装状态
+- 每次点"开启服务"扫描 `dsh-Plugin/` 下所有含 `package.json` 的子目录，计算指纹（目录名 + 文件树内容 sha256，跳过 `node_modules` 等生成目录）
+- **插件无改动** → 不弹窗，直接启动；**有改动**（新增/移除插件、改 `package.json` 或插件内文件）→ 弹出**便携插件管理**窗，显示名称 / 版本 / 已安装状态
 - 默认勾选 `dsh-plugin-guard` 与 `dsh-market`（已安装项也默认勾选，重复注册幂等）
 - 确认后随服务启动自动 `dsh plugin --profile web add link:<路径>` 注册到 web profile
 - 跳过 / 取消 = 不注册直接启动；注册失败不阻断启动（仅日志告警）
+- 指纹状态存于 `$DSH_HOME/dsh-desktop/plugin-state.json`；删除该文件可强制下次启动重新弹窗
 
 当前 `dsh-Plugin/` 下内置：
 
@@ -28,8 +30,14 @@
 | ----------------- | ---------------- | ------ | -------------------------------------- |
 | dsh-plugin-guard  | dsh-plugin-guard | 1.3.0  | 插件冲突 / 启动风险监控器，一键禁用启用 |
 | dsh-market        | dshmarket        | 1.15.0 | 可视化插件市场，浏览 / 搜索 / 一键安装  |
+| dsh-plugin-rules  | dsh-plugin-rules | 1.0.0  | 规则注入：同步 `rules/` 到 `$DSH_HOME/AGENTS.md`（零依赖，自启动生效） |
+| dsh-plugin-hardbound | dsh-plugin-hardbound | 1.0.0 | 全局硬边界规则插件（零依赖） |
+| dsh-plugin-gitops | dsh-plugin-gitops | 1.0.0 | Git 工作流规则插件（零依赖） |
+| dsh-plugin-engineering | dsh-plugin-engineering | 1.0.0 | 工程质量规则插件（零依赖） |
 
-> 要新增便携插件：把插件源（含 `package.json`，声明 `dsh.bundle.patch`）放入 `dsh-Plugin/`，启动器会自动识别。如需默认勾选，把目录名加入 `main.py` 的 `DEFAULT_LOCAL_PLUGINS`。
+> 规则类插件（rules/hardbound/gitops/engineering）启动时自动把规则合并写入 `$DSH_HOME/AGENTS.md`，**不依赖弹窗注册**也随服务生效；弹窗勾选主要用于 guard / market 的 `dsh plugin add link:` 注册。
+
+> 要新增便携插件：把插件源（含 `package.json`，声明 `dsh.bundle.patch`）放入 `dsh-Plugin/`，启动器会自动识别。如需默认勾选，把目录名加入 `app_config.py` 的 `DEFAULT_LOCAL_PLUGINS`。
 
 ## 与官方 CLI 对齐（deepseek-ai/deepseek-harness）
 
@@ -76,6 +84,8 @@ pyinstaller --noconfirm --onefile --windowed --name "DSH-Desktop" main.py
 ```
 
 打包后产物位于 `dist/DSH-Desktop.exe`，**双击即可运行，无需 Python 环境**。可发送给他人直接使用。
+
+> **重要**：EXE 必须与 `dsh-Plugin/` **同级摆放**（放到 `DSH-Desktop/` 根目录），否则便携插件扫描会指向 EXE 所在目录下不存在的 `dsh-Plugin/`（如 `dist/dsh-Plugin/`），导致插件管理弹窗不出现、guard/market 无法自动注册。这是 v1.3.9 已知坑，v1.4.0 未改变该约束。
 
 ## 关闭服务说明
 

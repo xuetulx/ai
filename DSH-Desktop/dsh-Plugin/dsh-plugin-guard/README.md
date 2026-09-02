@@ -1,7 +1,24 @@
 # dsh-plugin-guard
 
 DSH 插件冲突监控器：检测插件间冲突与启动风险，一键启停插件。
-对齐上游 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) 的插件系统机制（bundle patch 层、双锚点 bundle 解析、`patchReload` 热重载）。
+
+对齐上游 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) 的插件系统机制（bundle patch 层、双锚点 bundle 解析、`patchReload` 热重载）。零依赖，自包含便携。
+
+## Install
+
+```bash
+# link: 后面必须写真实绝对路径，不要保留尖括号
+dsh plugin --profile web add link:d:/3.aidata/ai/DSH-Desktop/dsh-Plugin/dsh-plugin-guard
+```
+
+重启 `dsh web` 生效。安装后每次启动 DSH，`plugin-guard` 插件自动扫描插件树：
+
+- 无问题 → 输出 `[dsh-plugin-guard] 插件树检查通过`
+- 有问题 → 输出 `[dsh-plugin-guard] 检测到 N 个插件冲突/风险项` 及明细
+
+### 在 DSH Desktop 中自动生效（便携插件）
+
+把本插件目录放进 `DSH-Desktop/dsh-Plugin/` 后，DSH Desktop 点"开启服务"会自动扫描识别，并在插件管理弹窗中勾选注册（有改动才弹窗）；注册后随服务启动自动执行上面的 `add link:` 命令，无需手动安装。
 
 ## 功能
 
@@ -13,33 +30,9 @@ DSH 插件冲突监控器：检测插件间冲突与启动风险，一键启停�
    - 配置覆盖引用了未启用插件
 3. **一键启停** — `disable <id>` / `enable <id>`，安全编辑 profile 的 `cordis.patch.yml`（自动备份 `.guard.bak`），依据 profile 的 `patchReload` 提示热重载或重启
 
-## 与上游 DSH 机制对齐的更新（v1.3）
-
-- **双锚点 bundle 解析**：`findBundleDir` 先查 profile 的 `node_modules`，再从 dsh 安装目录解析内置 bundle（`@deepseek-ai/dsh-base`、`@deepseek-ai/dsh-web-app`、`@deepseek-ai/dsh-headless`），不再跳过内置 bundle
-- **patch 文件名动态化**：patch 文件路径读取 bundle manifest 的 `dsh.bundle.patch` 字段（如 `./cordis.patch.yml`），不再硬编码
-- **`patchReload` 感知**：读取 profile manifest 的 `dsh.profile.patchReload`（默认 `live` 热重载），CLI 与宿主插件据此显示"即时生效"或"需重启"提示
-- **home 级 patch 层**：扫描并应用 `$DSH_HOME/cordis.patch.yml`（优先级高于 profile 自身层），对齐上游 home patch 机制
-- **`workspace:` 协议支持**：bundle 名支持 pnpm `workspace:` 前缀解析
-
-## 目录结构
-
-```
-dsh-plugin-guard/
-├── package.json         # npm 包描述（dsh.bundle.patch 指向 cordis.patch.yml）
-├── cordis.patch.yml     # bundle 补丁层（挂载 plugin-guard 行）
-├── dsh.plugin.json      # 插件清单
-├── bin/guard.js         # npm bin 入口
-└── lib/
-    ├── core.js          # 核心：扫描 / 检测 / 启停（零依赖）
-    ├── cli.js           # 命令行入口
-    └── index.js         # DSH 宿主插件（启动时自动检测告警）
-```
-
 ## 用法
 
 ### 方式一：命令行工具（推荐，DSH 崩溃时也能用）
-
-直接在 `dsh-plug-in/` 下运行 `guard.bat`，或手动执行：
 
 ```bash
 node dsh-plugin-guard/lib/cli.js status              # 概览状态
@@ -61,16 +54,15 @@ guard.bat enable  ui-obsidian-memory
 
 ### 方式二：作为 DSH 插件安装（启动时自动检测）
 
-```bash
-# 注意：link: 后面必须写真实绝对路径，不要保留尖括号
-dsh plugin --profile web add link:d:/3.aidata/ai/dsh-plug-in/dsh-plugin-guard
-```
+见上文 Install。若命令系统可用，还可在聊天中发送 `/guard` 查看状态。
 
-安装后每次启动 DSH，`plugin-guard` 插件会自动扫描插件树：
-- 无问题 → 输出 `[dsh-plugin-guard] 插件树检查通过`
-- 有问题 → 输出 `[dsh-plugin-guard] 检测到 N 个插件冲突/风险项` 及明细
+## 与上游 DSH 机制对齐的更新（v1.3）
 
-若命令系统可用，还可在聊天中发送 `/guard` 查看状态。
+- **双锚点 bundle 解析**：`findBundleDir` 先查 profile 的 `node_modules`，再从 dsh 安装目录解析内置 bundle（`@deepseek-ai/dsh-base`、`@deepseek-ai/dsh-web-app`、`@deepseek-ai/dsh-headless`），不再跳过内置 bundle
+- **patch 文件名动态化**：patch 文件路径读取 bundle manifest 的 `dsh.bundle.patch` 字段（如 `./cordis.patch.yml`），不再硬编码
+- **`patchReload` 感知**：读取 profile manifest 的 `dsh.profile.patchReload`（默认 `live` 热重载），CLI 与宿主插件据此显示"即时生效"或"需重启"提示
+- **home 级 patch 层**：扫描并应用 `$DSH_HOME/cordis.patch.yml`（优先级高于 profile 自身层），对齐上游 home patch 机制
+- **`workspace:` 协议支持**：bundle 名支持 pnpm `workspace:` 前缀解析
 
 ## 已识别的风险插件
 
@@ -95,9 +87,28 @@ dsh plugin --profile web add link:d:/3.aidata/ai/dsh-plug-in/dsh-plugin-guard
 - `live`（默认）— 热重载，修改后即时生效，无需重启
 - `startup` — 需重启 DSH 才生效
 
+## 目录结构
+
+```
+dsh-plugin-guard/
+├── package.json         # npm 包描述（dsh.bundle.patch 指向 cordis.patch.yml）
+├── cordis.patch.yml     # bundle 补丁层（挂载 plugin-guard 行）
+├── dsh.plugin.json      # 插件清单
+├── bin/guard.js         # npm bin 入口
+└── lib/
+    ├── core.js          # 核心：扫描 / 检测 / 启停（零依赖）
+    ├── cli.js           # 命令行入口
+    └── index.js         # DSH 宿主插件（启动时自动检测告警）
+```
+
 ## 注意事项
 
 - 修改 `cordis.patch.yml` 前自动备份，如操作失误可用备份恢复
 - 内置宿主 bundle（`@deepseek-ai/dsh-base` 等）从 dsh 安装目录解析，无需也不应安装到 profile 的 node_modules
 - 聚合包（如 `@linxin666/dsh-web-ui-all`）挂载多个 id 是正常设计，不视为冲突
 - home 级用户 patch（`$DSH_HOME/cordis.patch.yml`）优先级高于 profile 自身层，扫描结果中带 `homePatchFile` 标记
+
+## 版本
+
+- 1.3.0：双锚点 bundle 解析 / patch 文件名动态化 / patchReload 感知 / home 级 patch 层 / workspace: 协议
+- 1.0.0：初始版本，扫描 / 冲突检测 / 一键启停

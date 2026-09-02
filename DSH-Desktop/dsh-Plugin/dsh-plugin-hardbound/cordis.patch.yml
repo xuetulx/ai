@@ -1,0 +1,5 @@
+# dsh-plugin-hardbound bundle patch: mounts the hardbound rules plugin row.
+# The row id must match the plugin's `export const name` in lib/index.js.
+- insert:
+    - id: plugin-hardbound
+      name: 'dsh-plugin-hardbound'
