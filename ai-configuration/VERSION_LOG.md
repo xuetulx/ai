@@ -1,5 +1,14 @@
 # 版本迭代日志
 
+## v1.14 (2026-09-10)
+- **变更类型**: 文档新增
+- **变更摘要**: 新增 GitHub MCP 报 `Bad credentials` 的根因排查归档 —— 根因是 CodeBuddy 不展开 `mcp.json` 里 `env` 的 `${VAR}` 插值，MCP 子进程拿到字面量字符串
+- **影响文件**:
+  - 新增: `07-TROUBLESHOOTING/2026-09-10-GitHub-MCP令牌插值不展开与Node系统CA排查.md`（frontmatter 含 date/status/category/tags；含现象、三层误判排除、双 MCP 对照定位法、Node `--use-system-ca` 隐藏坑、修复配置片段、Watt Toolkit 非 HTTP 代理的纠正、可复用经验清单）
+- **核心要点**: ① `${VAR}` 插值不展开 → 删 env token 键改由子进程**继承主进程环境变量**；② Node 走 Watt Toolkit 自签 CA 反代**必须** `NODE_OPTIONS=--use-system-ca`；③ Watt Toolkit 是 hosts + 本地 443 反代，**不能**配成 HTTP 代理
+- **配套动作**: 用户级 `~/.codebuddy/mcp.json` 已重配（备份 `mcp.json.bak-20260910`）；改动需**重启 CodeBuddy** 生效
+- **连带发现**: CNB MCP 同因故障（同样 401），修复方式一致
+
 ## v1.13 (2026-09-01)
 - **变更类型**: 文档新增 + 规则同步
 - **变更摘要**: 新增 GitHub 推送网络排查（Watt Toolkit 加速模式）文档，并同步至 ai-rules 与 DSH 插件规则
