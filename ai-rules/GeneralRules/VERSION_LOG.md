@@ -440,3 +440,11 @@
 
 - `D:\3.aidata\dsh\.dsh\skills\` 的 7 个截断技能副本（`code-review` 1400 vs 3544 字节等）。
 - 本仓库仍在 `main` 且存在**先于本次操作**的 196 条 staged 删除；按规则 §4.2 不应在 main 上直接提交，是否建分支提交待定。
+
+### 提交记录
+
+- 分支：`chore/config-audit-alignment`（自 `main` @ `958008b` 切出）
+- 提交：`fe20c74` — `chore(rules): 确立单一权威源并对齐三处规则口径`（39 files changed, +183 / -6）
+- 推送：已推送至 `origin`（`github.com/xuetulx/ai.git`），远端分支同名；PR 入口 `https://github.com/xuetulx/ai/pull/new/chore/config-audit-alignment`
+- **未提交**：那 196 条先于本次操作存在的删除，以及本仓库仍留在 `main` 的状态问题。
+- 仓库根路径为 `D:\3.aidata\ai`（git 仓库根），`ai-rules` 是其子目录，故提交内路径带有 `ai-rules/` 前缀。
