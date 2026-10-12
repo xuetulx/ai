@@ -1,8 +1,8 @@
 ---
 trigger: on_file_operation
 priority: high
-version: 1.6
-last_updated: 2026-07-21
+version: 1.7
+last_updated: 2026-10-12
 ---
 
 # 02 文件操作规则
@@ -12,6 +12,11 @@ last_updated: 2026-07-21
 > **前置依赖**：`01_core_behavior.md`（权限体系 + 边界优先）
 >
 > **来源**：AgentAI_项目文件操作规则 v2.3 §2~§9；社区 AGENTS.md 六大核心领域对齐
+>
+> **v1.7 变更（2026-10-12 三处规则对齐）**：① 批量删除门槛统一为「≥3 即须列清单 + `[ASK]`」，
+> 与全局 `$DSH_HOME\AGENTS.md` §1 `[ASK]` 第 3 条一致（§6.1 阈值表同义）；② §2.3 受保护文件清单
+> 已知会与全局 AGENTS.md 的常驻子集互为补充；③ 本目录已确立为 ai-rules 唯一权威源，
+> 原 `merge\`、`split\` 已移入 `..\archive\`（见 `..\..\README.md`）。
 
 ---
 
@@ -99,7 +104,7 @@ enabled: true                  # 是否启用
 | **构建/依赖配置** | `package.json`、`Cargo.toml`、`go.mod`、`pyproject.toml`、`requirements.txt` |
 | **依赖锁定文件** | `package-lock.json`、`yarn.lock`、`Cargo.lock`、`go.sum`、`pnpm-lock.yaml` |
 | **CI/CD 配置** | `.github/workflows/`、`.gitlab-ci.yml`、`Jenkinsfile`、`Dockerfile` |
-| **环境/密钥** | `.env`、`.env.*`、`*.pem`、`*.key`、`*.cert`、`config*.yaml` |
+| **环境/密钥** | `.env`、`.env.*`、`*.pem`、`*.key`、`*.cert`、`*.pfx`、`*.p12`、`*.keystore`、`id_rsa*`、`credentials.*`、`token*`、`config*.yaml` |
 | **Git 配置** | `.gitignore`、`.gitattributes`、`.git/config` |
 | **编辑器配置** | `.vscode/`、`.idea/`、`.editorconfig` |
 | **Claude Code 配置** | `.claude/settings.json`、`.claude/hooks/` |
@@ -211,6 +216,9 @@ enabled: true                  # 是否启用
 - **1~2 个文件**：按上表权限执行
 - **3~4 个文件**：`[ASK]` 列出待删除清单（路径、类型、修改时间），确认后执行
 - **≥ 5 个文件**：`[BLOCK]` 逐条展示详情，**逐一**获得确认
+- **口径说明（2026-10-12 对齐）**：门槛统一为「**≥3 个即须先列清单并经 `[ASK]` 确认**」，与全局规则
+  `$DSH_HOME\AGENTS.md` §1 `[ASK]` 第 3 条一致；≥5 的 `[BLOCK]` 是更严格档，保留。§6.1 批量阈值表
+  「删除文件 ≥3」与本条同义，不再是两套数。
 
 ### 4.3 删除安全机制
 

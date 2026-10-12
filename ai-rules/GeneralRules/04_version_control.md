@@ -1,8 +1,8 @@
 ---
 trigger: on_git_operation
 priority: high
-version: 1.5
-last_updated: 2026-09-01
+version: 1.6
+last_updated: 2026-10-12
 ---
 
 # 04 版本控制与工程规范
@@ -12,6 +12,10 @@ last_updated: 2026-09-01
 > **前置依赖**：`01_core_behavior.md`
 >
 > **来源**：AgentAI_项目文件操作规则 v2.3 §10 + §12 + §19.4；AI_RULES v3.1 §13；AGENTS.md 文件大小建议
+>
+> **v1.6 变更（2026-10-12 三处规则对齐）**：§3.2 的 type 集合（含 `revert`，共 11 项）已与全局
+> `$DSH_HOME\AGENTS.md` §4.3 完全一致；受保护分支名以全局 AGENTS.md §4.2 的
+> `main` / `master` / `develop` / `release/*` 为准（为三处规则并集）。
 
 ---
 
